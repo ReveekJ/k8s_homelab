@@ -1,0 +1,56 @@
+---
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: registry
+  namespace: argocd
+  finalizers:
+    - resources-finalizer.argoproj.io
+spec:
+  project: default
+  source:
+    repoURL: https://twuni.github.io/docker-registry.helm
+    chart: docker-registry
+    targetRevision: 2.2.0
+    helm:
+      releaseName: registry
+      values: |
+        baseDomain: reveek-io.ru
+        image:
+          tag: 3.0.0
+        persistence:
+          enabled: true
+          size: 20Gi
+          storageClass: local-path
+        ingress:
+          enabled: true
+          className: traefik
+          hosts:
+            - reg.reveek-io.ru
+          annotations:
+            cert-manager.io/cluster-issuer: letsencrypt
+          tls:
+            - secretName: registry-tls
+              hosts:
+                - reg.reveek-io.ru
+        secrets:
+          htpasswd: ""
+        resources:
+          requests:
+            cpu: 50m
+            memory: 64Mi
+          limits:
+            cpu: 250m
+            memory: 256Mi
+        configData:
+          headers:
+            X-Content-Type-Options: [nosniff]
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: registry
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+      - CreateNamespace=true

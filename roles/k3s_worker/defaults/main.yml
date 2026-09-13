@@ -1,0 +1,4 @@
+---
+k3s_install_script_url: https://get.k3s.io
+k3s_server_url: "https://{{ hostvars[groups['k3s_master'][0]].ansible_host }}:{{ hostvars[groups['k3s_master'][0]].k3s_api_port | default(6443) }}"
+k3s_worker_extra_args: ""

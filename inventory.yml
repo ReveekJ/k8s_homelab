@@ -1,0 +1,11 @@
+---
+k3s_cluster:
+  children:
+    k3s_master:
+      hosts:
+        192.168.1.10:
+          ansible_user: reveek
+    k3s_worker:
+      hosts:
+        192.168.1.7:
+          ansible_user: reveek

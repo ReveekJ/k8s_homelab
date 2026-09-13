@@ -1,0 +1,21 @@
+---
+argocd_version: v3.1.11
+argocd_namespace: argocd
+argocd_admin_password: "{{ argocd_admin_password_secret | default('changeme') }}"
+
+argocd_resource_patches:
+  - deployment: argocd-server
+    memory_request: 128Mi
+    memory_limit: 256Mi
+  - deployment: argocd-repo-server
+    memory_request: 128Mi
+    memory_limit: 256Mi
+  - deployment: argocd-applicationset-controller
+    memory_request: 64Mi
+    memory_limit: 128Mi
+  - deployment: argocd-notifications-controller
+    memory_request: 64Mi
+    memory_limit: 128Mi
+  - statefulset: argocd-application-controller
+    memory_request: 256Mi
+    memory_limit: 512Mi

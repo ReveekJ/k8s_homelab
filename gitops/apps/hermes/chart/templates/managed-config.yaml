@@ -1,0 +1,42 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: hermes-managed-config
+  labels:
+    app.kubernetes.io/name: hermes
+data:
+  config.yaml: |
+    gateway:
+      multiplex_profiles: true
+      multiplex_profile_allowlist:
+{{- range .Values.profiles }}
+        - {{ .name | quote }}
+{{- end }}
+      api_server:
+        enabled: true
+        host: 127.0.0.1
+        port: {{ .Values.apiServer.port }}
+        model_name: hermes-agent
+    kanban:
+      dispatch_in_gateway: {{ .Values.kanban.dispatchInGateway }}
+      dispatch_interval_seconds: {{ .Values.kanban.dispatchIntervalSeconds }}
+      review_dispatch: {{ .Values.kanban.reviewDispatch }}
+      orchestrator_profile: {{ .Values.kanban.orchestratorProfile | quote }}
+      default_assignee: {{ .Values.kanban.defaultAssignee | quote }}
+      auto_decompose: {{ .Values.kanban.autoDecompose }}
+    security:
+      redact_secrets: true
+      allow_lazy_installs: false
+    approvals:
+      mode: manual
+      timeout: 300
+      cron_mode: deny
+      single_query_mode: deny
+    checkpoints:
+      enabled: true
+      max_snapshots: 20
+    runtime:
+      nofile_soft_limit: 4096
+    updates:
+      pre_update_backup: full
+      backup_keep: 5

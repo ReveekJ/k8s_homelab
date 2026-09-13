@@ -1,0 +1,95 @@
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: hermes
+  labels:
+    app.kubernetes.io/name: hermes
+spec:
+  serviceName: hermes
+  replicas: 1
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: hermes
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: hermes
+    spec:
+      {{- with .Values.imagePullSecrets }}
+      imagePullSecrets:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      nodeSelector:
+        {{- toYaml .Values.nodeSelector | nindent 8 }}
+      containers:
+        - name: serve
+          image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          args: ["serve", "--host", "0.0.0.0", "--port", "{{ .Values.serve.port }}", "--skip-build"]
+          env:
+            - name: HERMES_HOME
+              value: {{ .Values.hermesHome | quote }}
+            - name: HERMES_MANAGED_DIR
+              value: /etc/hermes
+            - name: HOME
+              value: {{ .Values.hermesHome | quote }}
+          envFrom:
+            - secretRef:
+                name: hermes-secrets
+          ports:
+            - name: serve
+              containerPort: {{ .Values.serve.port }}
+          volumeMounts:
+            - name: hermes-home
+              mountPath: {{ .Values.hermesHome }}
+            - name: projects
+              mountPath: {{ .Values.projectsRoot }}
+            - name: managed-config
+              mountPath: /etc/hermes
+            - name: profiles-config
+              mountPath: {{ .Values.hermesHome }}/profiles-config
+          resources:
+            {{- toYaml .Values.serve.resources | nindent 12 }}
+          livenessProbe:
+            tcpSocket:
+              port: serve
+            initialDelaySeconds: 60
+            periodSeconds: 30
+        - name: gateway
+          image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          args: ["gateway", "run"]
+          env:
+            - name: HERMES_HOME
+              value: {{ .Values.hermesHome | quote }}
+            - name: HERMES_MANAGED_DIR
+              value: /etc/hermes
+            - name: HOME
+              value: {{ .Values.hermesHome | quote }}
+          envFrom:
+            - secretRef:
+                name: hermes-secrets
+          volumeMounts:
+            - name: hermes-home
+              mountPath: {{ .Values.hermesHome }}
+            - name: projects
+              mountPath: {{ .Values.projectsRoot }}
+            - name: managed-config
+              mountPath: /etc/hermes
+            - name: profiles-config
+              mountPath: {{ .Values.hermesHome }}/profiles-config
+          resources:
+            {{- toYaml .Values.gateway.resources | nindent 12 }}
+      volumes:
+        - name: hermes-home
+          persistentVolumeClaim:
+            claimName: hermes-home
+        - name: projects
+          persistentVolumeClaim:
+            claimName: hermes-home
+        - name: managed-config
+          configMap:
+            name: hermes-managed-config
+        - name: profiles-config
+          configMap:
+            name: hermes-profiles-config

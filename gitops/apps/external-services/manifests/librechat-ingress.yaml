@@ -1,0 +1,155 @@
+---
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: librechat
+  namespace: external-services
+  annotations:
+    cert-manager.io/cluster-issuer: letsencrypt
+spec:
+  ingressClassName: traefik
+  tls:
+    - hosts:
+        - librechat.reveek-io.ru
+      secretName: librechat-tls
+  rules:
+    - host: librechat.reveek-io.ru
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: librechat
+                port:
+                  number: 3080
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: librechat
+  namespace: external-services
+spec:
+  ports:
+    - name: main
+      port: 3080
+      targetPort: 3080
+---
+apiVersion: v1
+kind: Endpoints
+metadata:
+  name: librechat
+  namespace: external-services
+subsets:
+  - addresses:
+      - ip: 192.168.1.10
+    ports:
+      - name: main
+        port: 3080
+---
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: librechat-admin
+  namespace: external-services
+  annotations:
+    cert-manager.io/cluster-issuer: letsencrypt
+spec:
+  ingressClassName: traefik
+  tls:
+    - hosts:
+        - admin.librechat.reveek-io.ru
+      secretName: librechat-admin-tls
+  rules:
+    - host: admin.librechat.reveek-io.ru
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: librechat-admin
+                port:
+                  number: 3000
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: librechat-admin
+  namespace: external-services
+spec:
+  ports:
+    - name: admin
+      port: 3000
+      targetPort: 3000
+---
+apiVersion: v1
+kind: Endpoints
+metadata:
+  name: librechat-admin
+  namespace: external-services
+subsets:
+  - addresses:
+      - ip: 192.168.1.10
+    ports:
+      - name: admin
+        port: 3000
+---
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: librechat-user-admin
+  namespace: external-services
+  annotations:
+    cert-manager.io/cluster-issuer: letsencrypt
+    traefik.ingress.kubernetes.io/router.middlewares: external-services-librechat-stripprefix@kubernetescrd
+spec:
+  ingressClassName: traefik
+  tls:
+    - hosts:
+        - librechat.reveek-io.ru
+      secretName: librechat-tls
+  rules:
+    - host: librechat.reveek-io.ru
+      http:
+        paths:
+          - path: /user-admin
+            pathType: Prefix
+            backend:
+              service:
+                name: librechat-user-admin
+                port:
+                  number: 3001
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: librechat-user-admin
+  namespace: external-services
+spec:
+  ports:
+    - name: user-admin
+      port: 3001
+      targetPort: 3001
+---
+apiVersion: v1
+kind: Endpoints
+metadata:
+  name: librechat-user-admin
+  namespace: external-services
+subsets:
+  - addresses:
+      - ip: 192.168.1.10
+    ports:
+      - name: user-admin
+        port: 3001
+---
+apiVersion: traefik.io/v1alpha1
+kind: Middleware
+metadata:
+  name: librechat-stripprefix
+  namespace: external-services
+spec:
+  stripPrefix:
+    prefixes:
+      - /user-admin

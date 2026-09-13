@@ -1,0 +1,36 @@
+---
+- name: Install k3s server
+  ansible.builtin.shell: |
+    set -o pipefail
+    curl -sfL {{ k3s_install_script_url }} | \
+      INSTALL_K3S_VERSION="{{ k3s_version }}" \
+      INSTALL_K3S_EXEC="server {{ k3s_server_extra_args }}" \
+      sh -s - \
+      --write-kubeconfig-mode {{ k3s_write_kubeconfig_mode }}
+  args:
+    creates: /usr/local/bin/k3s
+  environment:
+    INSTALL_K3S_SKIP_ENABLE: "false"
+
+- name: Read node token
+  ansible.builtin.slurp:
+    src: /var/lib/rancher/k3s/server/node-token
+  register: k3s_node_token_raw
+
+- name: Expose join token as fact
+  ansible.builtin.set_stats:
+    data:
+      k3s_join_token: "{{ k3s_node_token_raw.content | b64decode | trim }}"
+    per_host: false
+
+- name: Wait for k3s API to be ready
+  ansible.builtin.wait_for:
+    host: "{{ ansible_host }}"
+    port: "{{ k3s_api_port }}"
+    timeout: 300
+
+- name: Fetch kubeconfig to controller
+  ansible.builtin.fetch:
+    src: /etc/rancher/k3s/k3s.yaml
+    dest: "{{ playbook_dir }}/../kubeconfig/{{ inventory_hostname }}.yaml"
+    flat: true

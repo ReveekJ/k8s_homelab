@@ -1,0 +1,126 @@
+---
+hermesHome: /hermes
+projectsRoot: /srv/projects
+
+image:
+  repository: registry.example.com/hermes-agent
+  tag: latest
+  pullPolicy: Always
+
+imagePullSecrets: []
+
+serve:
+  port: 9119
+  resources:
+    requests:
+      cpu: 250m
+      memory: 1Gi
+    limits:
+      cpu: "1"
+      memory: 2Gi
+
+gateway:
+  resources:
+    requests:
+      cpu: 250m
+      memory: 768Mi
+    limits:
+      cpu: "1"
+      memory: 1536Mi
+
+apiServer:
+  port: 8642
+
+ingress:
+  enabled: true
+  className: traefik
+  host: hermes.reveek-io.ru
+  clusterIssuer: letsencrypt
+  tlsSecretName: hermes-tls
+
+persistence:
+  enabled: true
+  storageClass: local-path
+  size: 20Gi
+
+nodeSelector:
+  kubernetes.io/hostname: worker-node
+
+profiles:
+  - name: chief-of-staff
+    description: "Chief of Staff: Notion planning, Kanban routing, review, and acceptance."
+    toolsets: "file,skills,terminal,web,browser,kanban,memory,cronjob,clarify"
+    enableMemory: true
+    enableKanban: true
+    enableCron: true
+    mcpServers:
+      - notion
+  - name: tech
+    description: "Technical lead: specifications, decomposition, engineering quality, and QA coordination."
+    toolsets: "file,skills,terminal,web,browser,kanban"
+    enableMemory: false
+    enableKanban: true
+    enableCron: false
+    mcpServers: []
+  - name: backend-developer
+    description: "Backend implementation from an approved technical specification."
+    toolsets: "file,skills,terminal,web,browser,kanban"
+    enableMemory: false
+    enableKanban: true
+    enableCron: false
+    mcpServers: []
+  - name: devops-engineer
+    description: "Infrastructure, deployment, observability, and operational implementation."
+    toolsets: "file,skills,terminal,web,browser,kanban"
+    enableMemory: false
+    enableKanban: true
+    enableCron: false
+    mcpServers: []
+  - name: qa-engineer
+    description: "Evidence-based QA and end-to-end verification."
+    toolsets: "file,skills,terminal,web,browser,kanban"
+    enableMemory: false
+    enableKanban: true
+    enableCron: false
+    mcpServers: []
+  - name: researcher
+    description: "Source-based research, comparisons, citations, and decision support."
+    toolsets: "file,skills,terminal,web,browser,kanban"
+    enableMemory: false
+    enableKanban: true
+    enableCron: false
+    mcpServers: []
+  - name: datagraph
+    description: "DataGraph analysis and engineering."
+    toolsets: "file,skills,terminal,web,browser,kanban"
+    enableMemory: false
+    enableKanban: true
+    enableCron: false
+    mcpServers: []
+  - name: sesc-it-ceo
+    description: "SESC IT Team CEO planning and delivery."
+    toolsets: "file,skills,terminal,web,browser,kanban"
+    enableMemory: false
+    enableKanban: true
+    enableCron: false
+    mcpServers: []
+
+kanban:
+  dispatchInGateway: true
+  dispatchIntervalSeconds: 60
+  reviewDispatch: true
+  orchestratorProfile: chief-of-staff
+  defaultAssignee: chief-of-staff
+  autoDecompose: false
+
+backup:
+  enabled: true
+  schedule: "30 3 * * *"
+  retentionDays: 14
+  resources:
+    requests:
+      cpu: 50m
+      memory: 64Mi
+    limits:
+      cpu: 250m
+      memory: 256Mi

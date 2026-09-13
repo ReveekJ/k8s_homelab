@@ -1,0 +1,52 @@
+{{- if .Values.backup.enabled }}
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: hermes-backup
+  labels:
+    app.kubernetes.io/name: hermes
+spec:
+  schedule: {{ .Values.backup.schedule | quote }}
+  successfulJobsHistoryLimit: 3
+  failedJobsHistoryLimit: 3
+  concurrencyPolicy: Forbid
+  jobTemplate:
+    spec:
+      template:
+        metadata:
+          labels:
+            app.kubernetes.io/name: hermes
+        spec:
+          restartPolicy: OnFailure
+          nodeSelector:
+            {{- toYaml .Values.nodeSelector | nindent 12 }}
+          containers:
+            - name: backup
+              image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
+              imagePullPolicy: {{ .Values.image.pullPolicy }}
+              command:
+                - /bin/sh
+                - -c
+                - |
+                  set -eu
+                  backup_dir="{{ .Values.hermesHome }}/backups"
+                  mkdir -p "$backup_dir"
+                  ts="$(date +%Y%m%d-%H%M%S)"
+                  tar -czf "$backup_dir/hermes-home-$ts.tar.gz" -C "{{ .Values.hermesHome }}" .
+                  find "$backup_dir" -name 'hermes-home-*.tar.gz' -mtime +{{ .Values.backup.retentionDays }} -delete
+                  echo "backup complete: hermes-home-$ts.tar.gz"
+              env:
+                - name: HERMES_HOME
+                  value: {{ .Values.hermesHome | quote }}
+                - name: HOME
+                  value: {{ .Values.hermesHome | quote }}
+              volumeMounts:
+                - name: hermes-home
+                  mountPath: {{ .Values.hermesHome }}
+              resources:
+                {{- toYaml .Values.backup.resources | nindent 16 }}
+          volumes:
+            - name: hermes-home
+              persistentVolumeClaim:
+                claimName: hermes-home
+{{- end }}

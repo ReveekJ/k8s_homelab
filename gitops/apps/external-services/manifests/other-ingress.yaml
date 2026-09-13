@@ -1,0 +1,192 @@
+---
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: searxng
+  namespace: external-services
+  annotations:
+    cert-manager.io/cluster-issuer: letsencrypt
+spec:
+  ingressClassName: traefik
+  tls:
+    - hosts:
+        - searxng.reveek-io.ru
+      secretName: searxng-tls
+  rules:
+    - host: searxng.reveek-io.ru
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: searxng
+                port:
+                  number: 8888
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: searxng
+  namespace: external-services
+spec:
+  ports:
+    - name: http
+      port: 8888
+      targetPort: 8888
+---
+apiVersion: v1
+kind: Endpoints
+metadata:
+  name: searxng
+  namespace: external-services
+subsets:
+  - addresses:
+      - ip: 192.168.1.10
+    ports:
+      - name: http
+        port: 8888
+---
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: presenton
+  namespace: external-services
+  annotations:
+    cert-manager.io/cluster-issuer: letsencrypt
+spec:
+  ingressClassName: traefik
+  tls:
+    - hosts:
+        - presenton.reveek-io.ru
+      secretName: presenton-tls
+  rules:
+    - host: presenton.reveek-io.ru
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: presenton
+                port:
+                  number: 5001
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: presenton
+  namespace: external-services
+spec:
+  ports:
+    - name: http
+      port: 5001
+      targetPort: 5001
+---
+apiVersion: v1
+kind: Endpoints
+metadata:
+  name: presenton
+  namespace: external-services
+subsets:
+  - addresses:
+      - ip: 192.168.1.10
+    ports:
+      - name: http
+        port: 5001
+---
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: noodle
+  namespace: external-services
+  annotations:
+    cert-manager.io/cluster-issuer: letsencrypt
+spec:
+  ingressClassName: traefik
+  tls:
+    - hosts:
+        - noodle.reveek-io.ru
+      secretName: noodle-tls
+  rules:
+    - host: noodle.reveek-io.ru
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: noodle
+                port:
+                  number: 2283
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: noodle
+  namespace: external-services
+spec:
+  ports:
+    - name: http
+      port: 2283
+      targetPort: 2283
+---
+apiVersion: v1
+kind: Endpoints
+metadata:
+  name: noodle
+  namespace: external-services
+subsets:
+  - addresses:
+      - ip: 192.168.1.10
+    ports:
+      - name: http
+        port: 2283
+---
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: root
+  namespace: external-services
+  annotations:
+    cert-manager.io/cluster-issuer: letsencrypt
+spec:
+  ingressClassName: traefik
+  tls:
+    - hosts:
+        - reveek-io.ru
+      secretName: root-tls
+  rules:
+    - host: reveek-io.ru
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: root-app
+                port:
+                  number: 11000
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: root-app
+  namespace: external-services
+spec:
+  ports:
+    - name: http
+      port: 11000
+      targetPort: 11000
+---
+apiVersion: v1
+kind: Endpoints
+metadata:
+  name: root-app
+  namespace: external-services
+subsets:
+  - addresses:
+      - ip: 192.168.1.10
+    ports:
+      - name: http
+        port: 11000

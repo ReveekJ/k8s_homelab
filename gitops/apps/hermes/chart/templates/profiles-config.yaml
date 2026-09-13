@@ -1,0 +1,39 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: hermes-profiles-config
+  labels:
+    app.kubernetes.io/name: hermes
+data:
+{{- range .Values.profiles }}
+  {{ .name }}.config.yaml: |
+    model:
+      default: gpt-5.6-luna
+      provider: custom
+      base_url: https://ddtnew.com/v1
+      api_key: ${HERMES_CUSTOM_DDTNEW_COM_API_KEY}
+    toolsets: {{ .toolsets }}
+    terminal:
+      backend: local
+      cwd: {{ $.Values.projectsRoot | quote }}
+      timeout: 180
+      home_mode: profile
+    memory:
+      memory_enabled: {{ .enableMemory }}
+      user_profile_enabled: {{ .enableMemory }}
+    kanban:
+      review_dispatch: {{ $.Values.kanban.reviewDispatch }}
+      orchestrator_profile: {{ $.Values.kanban.orchestratorProfile | quote }}
+      default_assignee: {{ $.Values.kanban.defaultAssignee | quote }}
+      auto_decompose: false
+    code_execution:
+      timeout: 300
+    security:
+      redact_secrets: true
+    approvals:
+      mode: manual
+      timeout: 300
+      cron_mode: deny
+    updates:
+      pre_update_backup: full
+{{- end }}

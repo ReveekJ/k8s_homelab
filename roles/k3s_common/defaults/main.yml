@@ -1,0 +1,12 @@
+---
+k3s_common_packages:
+  - ca-certificates
+  - curl
+  - git
+  - htop
+  - mc
+  - fish
+  - openssh-server
+  - sudo
+
+k3s_common_public_key: ""
