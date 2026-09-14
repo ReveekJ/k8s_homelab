@@ -1,0 +1,26 @@
+---
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: nasochnek
+  labels:
+    app.kubernetes.io/name: nasochnek
+  annotations:
+    cert-manager.io/cluster-issuer: letsencrypt
+spec:
+  ingressClassName: traefik
+  tls:
+    - hosts:
+        - nasochnek.reveek-io.ru
+      secretName: nasochnek-tls
+  rules:
+    - host: nasochnek.reveek-io.ru
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: nasochnek
+                port:
+                  name: http

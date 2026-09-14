@@ -1,0 +1,29 @@
+---
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: nasochnek
+  namespace: argocd
+  finalizers:
+    - resources-finalizer.argoproj.io
+spec:
+  project: default
+  sources:
+    - repoURL: https://github.com/ReveekJ/k8s_homelab.git
+      targetRevision: main
+      path: gitops/apps/nasochnek/manifests
+      directory:
+        recurse: true
+    - repoURL: https://github.com/ReveekJ/k8s_homelab.git
+      targetRevision: main
+      path: gitops/apps/nasochnek
+      kustomize: {}
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: nasochnek
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+      - CreateNamespace=true

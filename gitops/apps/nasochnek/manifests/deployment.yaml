@@ -1,0 +1,47 @@
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: nasochnek
+  labels:
+    app.kubernetes.io/name: nasochnek
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: nasochnek
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: nasochnek
+    spec:
+      imagePullSecrets:
+        - name: registry-auth
+      nodeSelector:
+        kubernetes.io/hostname: debian-hp
+      containers:
+        - name: nasochnek
+          image: reg.reveek-io.ru/nasochnek:latest
+          imagePullPolicy: Always
+          ports:
+            - name: http
+              containerPort: 80
+          resources:
+            requests:
+              cpu: 50m
+              memory: 64Mi
+            limits:
+              cpu: 250m
+              memory: 128Mi
+          readinessProbe:
+            httpGet:
+              path: /
+              port: http
+            initialDelaySeconds: 5
+            periodSeconds: 10
+          livenessProbe:
+            httpGet:
+              path: /
+              port: http
+            initialDelaySeconds: 10
+            periodSeconds: 30
