@@ -1,4 +1,4 @@
 ---
 k3s_install_script_url: https://get.k3s.io
 k3s_server_extra_args: ""
-k3s_write_kubeconfig_mode: "644"
+k3s_write_kubeconfig_mode: "600"

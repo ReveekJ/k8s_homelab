@@ -1,0 +1,44 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: argocd-ksops-cmp-cm
+  namespace: argocd
+data:
+  patch-ksops.sh: |
+    #!/bin/bash
+    mkdir -p /tmp/patch-ksops
+    cat > /tmp/patch-ksops/patch.yaml <<'EOF'
+    spec:
+      template:
+        spec:
+          volumes:
+            - name: cmp-kustomize
+              emptyDir: {}
+            - name: cmp-kustomize-tmp
+              emptyDir: {}
+            - name: sops-age-key
+              secret:
+                secretName: sops-age-key
+          containers:
+            - name: ksops
+              image: viaductai/ksops:v4.3.2
+              command: ["/var/run/argocd/argocd-cmp-server"]
+              args: ["--config-dir", "/etc/argocd/cmp"]
+              securityContext:
+                runAsNonRoot: true
+                runAsUser: 65534
+              volumeMounts:
+                - mountPath: /var/run/argocd
+                  name: var-run-argocd
+                - mountPath: /tmp
+                  name: cmp-kustomize-tmp
+                - mountPath: /etc/argocd/cmp
+                  name: cmp-kustomize
+                - name: sops-age-key
+                  mountPath: /etc/age-key
+                  readOnly: true
+              env:
+                - name: SOPS_AGE_KEY_FILE
+                  value: /etc/age-key/key.txt
+    EOF
+    kubectl -n argocd patch deployment argocd-repo-server --patch-file /tmp/patch-ksops/patch.yaml

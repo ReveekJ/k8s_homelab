@@ -44,3 +44,45 @@
   no_log: true
   register: argocd_password
   changed_when: "'patched' in argocd_password.stdout"
+
+- name: Wait for Argo CD server to be ready after password patch
+  ansible.builtin.command:
+    cmd: kubectl -n {{ argocd_namespace }} rollout status deployment/argocd-server --timeout=300s
+  changed_when: false
+
+- name: Apply root Application (app-of-apps bootstrap)
+  ansible.builtin.command:
+    cmd: >
+      kubectl apply -n {{ argocd_namespace }}
+      -f {{ playbook_dir }}/../gitops/bootstrap/root-app.yaml
+  register: root_app_apply
+  changed_when: "'configured' in root_app_apply.stdout or 'created' in root_app_apply.stdout"
+  delegate_to: "{{ groups['k3s_master'][0] }}"
+
+- name: Check if sops-age-key secret already exists
+  ansible.builtin.command:
+    cmd: kubectl -n {{ argocd_namespace }} get secret sops-age-key
+  register: sops_age_key_check
+  changed_when: false
+  failed_when: sops_age_key_check.rc != 0 and "NotFound" not in sops_age_key_check.stderr
+
+- name: Decrypt and apply sops-age-key secret (initial bootstrap)
+  when: "'NotFound' in sops_age_key_check.stderr"
+  block:
+    - name: Read encrypted age key secret from repo
+      ansible.builtin.slurp:
+        src: "{{ playbook_dir }}/../gitops/apps/argocd-config/manifests/secret-sops-age-key.yaml"
+      delegate_to: localhost
+      become: false
+      run_once: true
+      register: encrypted_age_key_file
+
+    - name: Apply decrypted age key secret
+      ansible.builtin.command:
+        cmd: >
+          kubectl -n {{ argocd_namespace }} apply -f -
+        stdin: "{{ decrypted_age_key_manifest }}"
+      vars:
+        decrypted_age_key_manifest: "{{ lookup('pipe', 'SOPS_AGE_KEY_FILE=' ~ sops_age_key_file_local ~ ' sops -d ' ~ playbook_dir ~ '/../gitops/apps/argocd-config/manifests/secret-sops-age-key.yaml') }}"
+      register: age_key_apply
+      changed_when: "'configured' in age_key_apply.stdout or 'created' in age_key_apply.stdout"

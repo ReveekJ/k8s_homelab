@@ -6,10 +6,12 @@
     append: true
 
 - name: Allow passwordless sudo for ansible user
-  ansible.builtin.lineinfile:
-    path: /etc/sudoers
-    line: "{{ ansible_user }} ALL=(ALL) NOPASSWD: ALL"
-    state: present
+  ansible.builtin.copy:
+    content: "{{ ansible_user }} ALL=(ALL) NOPASSWD: ALL\n"
+    dest: "/etc/sudoers.d/{{ ansible_user }}"
+    mode: "0440"
+    owner: root
+    group: root
     validate: "visudo -cf %s"
 
 - name: Update package list
@@ -27,15 +29,6 @@
     name: "{{ k3s_common_packages }}"
     state: present
 
-- name: Ensure sshd password authentication is disabled
-  ansible.builtin.lineinfile:
-    path: /etc/ssh/sshd_config
-    regexp: "^#?PasswordAuthentication"
-    line: "PasswordAuthentication no"
-    state: present
-    validate: "/usr/sbin/sshd -t -f %s"
-  notify: Restart sshd
-
 - name: Ensure authorized key for ansible user
   ansible.builtin.copy:
     content: "{{ k3s_common_public_key }}"
@@ -44,3 +37,21 @@
     owner: "{{ ansible_user }}"
     group: "{{ ansible_user }}"
   when: k3s_common_public_key | length > 0
+
+- name: Ensure sshd hardening config directory exists
+  ansible.builtin.file:
+    path: /etc/ssh/sshd_config.d
+    state: directory
+    mode: "0755"
+
+- name: Disable SSH password authentication
+  ansible.builtin.copy:
+    content: |
+      PasswordAuthentication no
+      KbdInteractiveAuthentication no
+    dest: "{{ k3s_common_sshd_hardening_conf }}"
+    mode: "0644"
+    owner: root
+    group: root
+    validate: "/usr/sbin/sshd -t -f %s"
+  notify: Restart sshd

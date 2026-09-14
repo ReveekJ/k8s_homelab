@@ -3,11 +3,12 @@ hermesHome: /hermes
 projectsRoot: /srv/projects
 
 image:
-  repository: registry.example.com/hermes-agent
+  repository: reg.reveek-io.ru/hermes-agent
   tag: latest
   pullPolicy: Always
 
-imagePullSecrets: []
+imagePullSecrets:
+  - name: registry-auth
 
 serve:
   port: 9119
@@ -34,17 +35,17 @@ apiServer:
 ingress:
   enabled: true
   className: traefik
-  host: hermes.reveek-io.ru
   clusterIssuer: letsencrypt
   tlsSecretName: hermes-tls
 
 persistence:
   enabled: true
   storageClass: local-path
-  size: 20Gi
+  homeSize: 20Gi
+  projectsSize: 20Gi
 
 nodeSelector:
-  kubernetes.io/hostname: worker-node
+  kubernetes.io/hostname: debian-hp
 
 profiles:
   - name: chief-of-staff

@@ -80,13 +80,21 @@ spec:
               mountPath: {{ .Values.hermesHome }}/profiles-config
           resources:
             {{- toYaml .Values.gateway.resources | nindent 12 }}
+          livenessProbe:
+            exec:
+              command:
+                - /bin/sh
+                - -c
+                - pgrep -f "hermes.*gateway" >/dev/null
+            initialDelaySeconds: 60
+            periodSeconds: 30
       volumes:
         - name: hermes-home
           persistentVolumeClaim:
             claimName: hermes-home
         - name: projects
           persistentVolumeClaim:
-            claimName: hermes-home
+            claimName: hermes-projects
         - name: managed-config
           configMap:
             name: hermes-managed-config

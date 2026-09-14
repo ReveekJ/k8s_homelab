@@ -1,0 +1,38 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: argocd-repo-server
+  namespace: argocd
+spec:
+  template:
+    spec:
+      volumes:
+        - name: cmp-kustomize
+          configMap:
+            name: argocd-ksops-cmp-cm
+        - name: cmp-kustomize-tmp
+          emptyDir: {}
+        - name: sops-age-key
+          secret:
+            secretName: sops-age-key
+      containers:
+        - name: ksops
+          image: viaductai/ksops:v4.3.2
+          command: ["/var/run/argocd/argocd-cmp-server"]
+          args: ["--config-dir", "/etc/argocd/cmp"]
+          securityContext:
+            runAsNonRoot: true
+            runAsUser: 65534
+          volumeMounts:
+            - mountPath: /var/run/argocd
+              name: var-run-argocd
+            - mountPath: /tmp
+              name: cmp-kustomize-tmp
+            - mountPath: /etc/argocd/cmp
+              name: cmp-kustomize
+            - name: sops-age-key
+              mountPath: /etc/age-key
+              readOnly: true
+          env:
+            - name: SOPS_AGE_KEY_FILE
+              value: /etc/age-key/key.txt

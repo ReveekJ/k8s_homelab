@@ -4,18 +4,29 @@ argocd_namespace: argocd
 argocd_admin_password: "{{ argocd_admin_password_secret | default('changeme') }}"
 
 argocd_resource_patches:
-  - deployment: argocd-server
+  - kind: deployment
+    name: argocd-server
     memory_request: 128Mi
     memory_limit: 256Mi
-  - deployment: argocd-repo-server
+  - kind: deployment
+    name: argocd-repo-server
     memory_request: 128Mi
     memory_limit: 256Mi
-  - deployment: argocd-applicationset-controller
+  - kind: deployment
+    name: argocd-applicationset-controller
     memory_request: 64Mi
     memory_limit: 128Mi
-  - deployment: argocd-notifications-controller
+  - kind: deployment
+    name: argocd-notifications-controller
     memory_request: 64Mi
     memory_limit: 128Mi
-  - statefulset: argocd-application-controller
+  - kind: statefulset
+    name: argocd-application-controller
     memory_request: 256Mi
     memory_limit: 512Mi
+
+gitops_repo_url: https://github.com/ReveekJ/k8s_homelab.git
+gitops_repo_revision: main
+
+# Local path to the age private key used to decrypt gitops secrets during bootstrap.
+sops_age_key_file_local: "{{ lookup('env', 'HOME') }}/.config/sops/age-homelab/k8s-homelab.txt"

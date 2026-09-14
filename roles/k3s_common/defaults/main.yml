@@ -10,3 +10,4 @@ k3s_common_packages:
   - sudo
 
 k3s_common_public_key: ""
+k3s_common_sshd_hardening_conf: /etc/ssh/sshd_config.d/00-homelab-hardening.conf

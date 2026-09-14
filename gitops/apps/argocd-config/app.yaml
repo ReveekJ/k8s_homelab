@@ -1,8 +1,7 @@
----
 apiVersion: argoproj.io/v1alpha1
 kind: Application
 metadata:
-  name: root
+  name: argocd-config
   namespace: argocd
   finalizers:
     - resources-finalizer.argoproj.io
@@ -11,11 +10,8 @@ spec:
   source:
     repoURL: https://github.com/ReveekJ/k8s_homelab.git
     targetRevision: main
-    path: gitops/apps
-    directory:
-      recurse: true
-      exclude: >-
-        {**/chart/**,**/templates/**,**/charts/**,secret-*.yaml,secret-generator.yaml,kustomization.yaml,*.md}
+    path: gitops/apps/argocd-config/manifests
+    kustomize: {}
   destination:
     server: https://kubernetes.default.svc
     namespace: argocd
@@ -23,3 +19,5 @@ spec:
     automated:
       prune: true
       selfHeal: true
+    syncOptions:
+      - ServerSideApply=true

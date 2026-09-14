@@ -9,7 +9,7 @@ metadata:
 spec:
   project: default
   source:
-    repoURL: git@github.com:example/k8s_homelab.git
+    repoURL: https://github.com/ReveekJ/k8s_homelab.git
     path: gitops/apps/external-services/manifests
     targetRevision: main
   destination:

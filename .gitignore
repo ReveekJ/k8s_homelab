@@ -2,3 +2,4 @@ group_vars/all/secrets.yml
 *.secret.yaml
 .vault-pass
 kubeconfig
+.ansible/

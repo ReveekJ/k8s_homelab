@@ -1,9 +1,12 @@
 ---
+# SSH private key used to connect to all cluster nodes.
+ansible_ssh_private_key_file: ~/.ssh/id_rsa/homelab
+
 # Public domain used for ingress hosts (registry, hermes, argocd).
-homelab_domain: example.com
+homelab_domain: reveek-io.ru
 
 # Public git repository URL Argo CD pulls this repository from.
-gitops_repo_url: "git@github.com:example/k8s_homelab.git"
+gitops_repo_url: "https://github.com/ReveekJ/k8s_homelab.git"
 gitops_repo_revision: main
 gitops_repo_path: gitops
 

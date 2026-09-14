@@ -8,14 +8,21 @@ metadata:
     - resources-finalizer.argoproj.io
 spec:
   project: default
-  source:
-    repoURL: git@github.com:example/k8s_homelab.git
-    targetRevision: main
-    path: gitops/apps/hermes/chart
-    helm:
-      valueFiles:
-        - $ARGOCD_APP_PROJECT/../values-common.yaml
-        - values.yaml
+  sources:
+    - repoURL: https://github.com/ReveekJ/k8s_homelab.git
+      targetRevision: main
+      path: gitops/apps/hermes/chart
+      helm:
+        valueFiles:
+          - $values/gitops/values-common.yaml
+          - values.yaml
+    - repoURL: https://github.com/ReveekJ/k8s_homelab.git
+      targetRevision: main
+      path: gitops/apps/hermes
+      kustomize: {}
+    - repoURL: https://github.com/ReveekJ/k8s_homelab.git
+      targetRevision: main
+      ref: values
   destination:
     server: https://kubernetes.default.svc
     namespace: hermes

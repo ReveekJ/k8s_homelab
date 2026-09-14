@@ -32,7 +32,7 @@ spec:
                   backup_dir="{{ .Values.hermesHome }}/backups"
                   mkdir -p "$backup_dir"
                   ts="$(date +%Y%m%d-%H%M%S)"
-                  tar -czf "$backup_dir/hermes-home-$ts.tar.gz" -C "{{ .Values.hermesHome }}" .
+                  tar --exclude="$backup_dir" -czf "$backup_dir/hermes-home-$ts.tar.gz" -C "{{ .Values.hermesHome }}" .
                   find "$backup_dir" -name 'hermes-home-*.tar.gz' -mtime +{{ .Values.backup.retentionDays }} -delete
                   echo "backup complete: hermes-home-$ts.tar.gz"
               env:

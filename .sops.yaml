@@ -1,0 +1,3 @@
+creation_rules:
+  - path_regex: gitops/apps/.*\.yaml$
+    age: age19fuquw740yzaljg4mzph5ejxkgwvnhp4xu9hu53s27s2g7w60uqqcg76qz

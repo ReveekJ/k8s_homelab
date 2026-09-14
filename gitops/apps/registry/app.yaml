@@ -8,43 +8,60 @@ metadata:
     - resources-finalizer.argoproj.io
 spec:
   project: default
-  source:
-    repoURL: https://twuni.github.io/docker-registry.helm
-    chart: docker-registry
-    targetRevision: 2.2.0
-    helm:
-      releaseName: registry
-      values: |
-        baseDomain: reveek-io.ru
-        image:
-          tag: 3.0.0
-        persistence:
-          enabled: true
-          size: 20Gi
-          storageClass: local-path
-        ingress:
-          enabled: true
-          className: traefik
-          hosts:
-            - reg.reveek-io.ru
-          annotations:
-            cert-manager.io/cluster-issuer: letsencrypt
-          tls:
-            - secretName: registry-tls
-              hosts:
-                - reg.reveek-io.ru
-        secrets:
-          htpasswd: ""
-        resources:
-          requests:
-            cpu: 50m
-            memory: 64Mi
-          limits:
-            cpu: 250m
-            memory: 256Mi
-        configData:
-          headers:
-            X-Content-Type-Options: [nosniff]
+  sources:
+    - repoURL: https://charts.jetstack.io
+      chart: docker-registry
+      targetRevision: 2.2.0
+      helm:
+        releaseName: registry
+        values: |
+          image:
+            tag: 3.0.0
+          configPath: /etc/distribution
+          persistence:
+            enabled: true
+            size: 20Gi
+            storageClass: local-path
+          nodeSelector:
+            kubernetes.io/hostname: debian-hp
+          ingress:
+            enabled: true
+            className: traefik
+            hosts:
+              - reg.reveek-io.ru
+            annotations:
+              cert-manager.io/cluster-issuer: letsencrypt
+            tls:
+              - secretName: registry-tls
+                hosts:
+                  - reg.reveek-io.ru
+          secrets:
+            htpasswd: ""
+          extraEnvVars:
+            - name: REGISTRY_AUTH
+              value: "htpasswd"
+            - name: REGISTRY_AUTH_HTPASSWD_REALM
+              value: "Registry Realm"
+            - name: REGISTRY_AUTH_HTPASSWD_PATH
+              value: "/auth/htpasswd"
+          extraSecretMounts:
+            - name: auth
+              secretName: registry-auth
+              path: /auth
+          resources:
+            requests:
+              cpu: 50m
+              memory: 64Mi
+            limits:
+              cpu: 250m
+              memory: 256Mi
+          configData:
+            headers:
+              X-Content-Type-Options: [nosniff]
+    - repoURL: https://github.com/ReveekJ/k8s_homelab.git
+      targetRevision: main
+      path: gitops/apps/registry
+      kustomize: {}
   destination:
     server: https://kubernetes.default.svc
     namespace: registry
