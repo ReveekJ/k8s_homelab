@@ -8,7 +8,7 @@ spec:
     spec:
       initContainers:
         - name: install-ksops
-          image: viaductai/ksops:v4.3.2
+          image: viaductoss/ksops:v4.3.2
           command: ["/bin/sh", "-c"]
           args: ["cp /usr/local/bin/ksops /custom-tools/ksops"]
           volumeMounts:
@@ -25,12 +25,11 @@ spec:
           env:
             - name: PATH
               value: /custom-tools:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
+            - name: SOPS_AGE_KEY_FILE
+              value: /etc/age-key/key.txt
           volumeMounts:
             - name: custom-tools
               mountPath: /custom-tools
             - name: sops-age-key
               mountPath: /etc/age-key
               readOnly: true
-          env:
-            - name: SOPS_AGE_KEY_FILE
-              value: /etc/age-key/key.txt
