@@ -1,5 +1,28 @@
 # Project rules — k8s Homelab
 
+## Workload placement
+
+The cluster has two nodes with a strict memory-oriented placement policy:
+
+- `master` (`192.168.1.10`) is the system node. k3s server, Argo CD, cert-manager, Traefik, CoreDNS, and other cluster infrastructure run here.
+- `worker` (`192.168.1.7`, hostname `debian-hp`) is the application node. User-facing applications, databases, queues, registries, runners, and their backup jobs run here.
+
+The worker has the taint `homelab.reveek.io/node-role=application:NoSchedule`. Every new application Pod must therefore have both:
+
+```yaml
+nodeSelector:
+  kubernetes.io/hostname: debian-hp
+tolerations:
+  - key: homelab.reveek.io/node-role
+    operator: Equal
+    value: application
+    effect: NoSchedule
+```
+
+For Helm charts, expose these as values and render them into every Deployment, StatefulSet, CronJob, and Job Pod template. Do not add the application toleration to system components. System workloads use `homelab.reveek.io/node-role: system`; unlabelled cluster infrastructure remains on the master because the worker taint rejects it.
+
+This policy exists to keep application memory pressure off the 4 GiB master and to reserve the 8 GiB worker for application workloads. Any exception requires an explicit placement decision in the manifest.
+
 ## Remote server access — Ansible only
 
 Any command that must run on cluster nodes (master `192.168.1.10`, worker `192.168.1.7`)

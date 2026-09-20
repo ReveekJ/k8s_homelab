@@ -14,6 +14,28 @@
   register: argocd_install
   changed_when: "'configured' in argocd_install.stdout or 'created' in argocd_install.stdout"
 
+- name: Pin Argo CD workloads to the system node
+  ansible.builtin.command:
+    cmd: kubectl -n {{ argocd_namespace }} patch {{ item.kind }}/{{ item.name }} --type merge -p '{{ item.patch }}'
+  loop:
+    - kind: deployment
+      name: argocd-server
+      patch: '{"spec":{"template":{"spec":{"nodeSelector":{"homelab.reveek.io/node-role":"system"}}}}}'
+    - kind: deployment
+      name: argocd-repo-server
+      patch: '{"spec":{"template":{"spec":{"nodeSelector":{"homelab.reveek.io/node-role":"system"}}}}}'
+    - kind: deployment
+      name: argocd-applicationset-controller
+      patch: '{"spec":{"template":{"spec":{"nodeSelector":{"homelab.reveek.io/node-role":"system"}}}}}'
+    - kind: deployment
+      name: argocd-notifications-controller
+      patch: '{"spec":{"template":{"spec":{"nodeSelector":{"homelab.reveek.io/node-role":"system"}}}}}'
+    - kind: statefulset
+      name: argocd-application-controller
+      patch: '{"spec":{"template":{"spec":{"nodeSelector":{"homelab.reveek.io/node-role":"system"}}}}}'
+  register: argocd_node_placement
+  changed_when: "'configured' in argocd_node_placement.stdout or 'patched' in argocd_node_placement.stdout"
+
 - name: Wait for Argo CD deployments to roll out
   ansible.builtin.command:
     cmd: >

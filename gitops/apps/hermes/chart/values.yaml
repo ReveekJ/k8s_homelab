@@ -47,6 +47,12 @@ persistence:
 nodeSelector:
   kubernetes.io/hostname: debian-hp
 
+tolerations:
+  - key: homelab.reveek.io/node-role
+    operator: Equal
+    value: application
+    effect: NoSchedule
+
 profiles:
   - name: chief-of-staff
     description: "Chief of Staff: Notion planning, Kanban routing, review, and acceptance."

@@ -9,6 +9,8 @@ gitops_repo_path: gitops
 
 k3s_version: "v1.36.4+k3s1"
 k3s_api_port: 6443
+k3s_server_extra_args: "--node-label=homelab.reveek.io/node-role=system"
+k3s_worker_extra_args: "--node-label=homelab.reveek.io/node-role=application --node-taint=homelab.reveek.io/node-role=application:NoSchedule"
 
 # Node placement for workloads with local-path persistent volumes.
 registry_pvc_size: 20Gi

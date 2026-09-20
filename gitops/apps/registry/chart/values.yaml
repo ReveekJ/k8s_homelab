@@ -10,6 +10,11 @@ docker-registry:
     storageClass: local-path
   nodeSelector:
     kubernetes.io/hostname: debian-hp
+  tolerations:
+    - key: homelab.reveek.io/node-role
+      operator: Equal
+      value: application
+      effect: NoSchedule
   ingress:
     enabled: false
   secrets:

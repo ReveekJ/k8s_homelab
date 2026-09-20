@@ -46,6 +46,11 @@ spec:
             spec:
               nodeSelector:
                 kubernetes.io/hostname: debian-hp
+              tolerations:
+                - key: homelab.reveek.io/node-role
+                  operator: Equal
+                  value: application
+                  effect: NoSchedule
               containers:
                 - name: runner
                   image: ghcr.io/actions/actions-runner:latest
@@ -54,6 +59,11 @@ spec:
             spec:
               nodeSelector:
                 kubernetes.io/hostname: debian-hp
+              tolerations:
+                - key: homelab.reveek.io/node-role
+                  operator: Equal
+                  value: application
+                  effect: NoSchedule
     # SOPS-encrypted GitHub App credentials for the controller and listeners
     - repoURL: https://github.com/ReveekJ/k8s_homelab.git
       targetRevision: main

@@ -1,0 +1,10 @@
+apiVersion: v2
+name: presenton
+description: Presenton AI presentation generator on Kubernetes
+type: application
+version: 0.1.0
+appVersion: "latest"
+dependencies:
+  - name: cluster
+    version: 0.1.0
+    repository: file://../../../charts/cluster

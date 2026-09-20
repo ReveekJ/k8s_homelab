@@ -9,8 +9,23 @@
       --write-kubeconfig-mode {{ k3s_write_kubeconfig_mode }}
   args:
     creates: /usr/local/bin/k3s
+    executable: /bin/bash
   environment:
     INSTALL_K3S_SKIP_ENABLE: "false"
+
+- name: Label master as system node
+  ansible.builtin.command:
+    cmd: kubectl label node {{ ansible_hostname }} homelab.reveek.io/node-role=system --overwrite
+  register: k3s_master_label
+  changed_when: "'labeled' in k3s_master_label.stdout or 'annotated' in k3s_master_label.stdout"
+
+- name: Pin Traefik to the system node
+  ansible.builtin.copy:
+    src: traefik-config.yaml
+    dest: /var/lib/rancher/k3s/server/manifests/traefik-config.yaml
+    owner: root
+    group: root
+    mode: "0644"
 
 - name: Read node token
   ansible.builtin.slurp:

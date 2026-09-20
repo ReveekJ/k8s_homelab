@@ -19,6 +19,11 @@ spec:
         - name: registry-auth
       nodeSelector:
         kubernetes.io/hostname: debian-hp
+      tolerations:
+        - key: homelab.reveek.io/node-role
+          operator: Equal
+          value: application
+          effect: NoSchedule
       containers:
         - name: nasochnek
           image: reg.reveek-io.ru/nasochnek:latest

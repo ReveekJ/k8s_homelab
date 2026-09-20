@@ -1,0 +1,78 @@
+image:
+  server:
+    repository: ghcr.io/open-noodle/gallery-server
+    tag: v5
+    pullPolicy: IfNotPresent
+  machineLearning:
+    repository: ghcr.io/open-noodle/gallery-ml
+    tag: v5
+    pullPolicy: IfNotPresent
+  redis:
+    repository: redis
+    tag: "7"
+    pullPolicy: IfNotPresent
+  database:
+    repository: ghcr.io/immich-app/postgres
+    digest: sha256:bcf63357191b76a916ae5eb93464d65c07511da41e3bf7a8416db519b40b1c23
+    pullPolicy: IfNotPresent
+
+secretName: noodle-gallery-secrets
+timezone: Europe/Moscow
+nodeSelector:
+  kubernetes.io/hostname: debian-hp
+
+tolerations:
+  - key: homelab.reveek.io/node-role
+    operator: Equal
+    value: application
+    effect: NoSchedule
+
+server:
+  port: 2283
+  resources:
+    requests:
+      cpu: 500m
+      memory: 1Gi
+    limits:
+      cpu: "2"
+      memory: 4Gi
+
+machineLearning:
+  resources:
+    requests:
+      cpu: 250m
+      memory: 1Gi
+    limits:
+      cpu: "2"
+      memory: 4Gi
+
+redis:
+  port: 6379
+
+database:
+  port: 5432
+  name: immich
+  user: postgres
+  resources:
+    requests:
+      cpu: 500m
+      memory: 1Gi
+    limits:
+      cpu: "2"
+      memory: 4Gi
+
+persistence:
+  storageClass: local-path
+  databaseSize: 50Gi
+  library:
+    hostPath: /mnt/hub_drive_2/immich/library
+    size: 250Gi
+  backup:
+    hostPath: /mnt/hub_drive_2/immich_backup
+
+ingress:
+  enabled: true
+  host: noodle.reveek-io.ru
+  className: traefik
+  clusterIssuer: letsencrypt
+  tlsSecretName: noodle-tls

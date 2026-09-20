@@ -20,6 +20,8 @@ spec:
           restartPolicy: OnFailure
           nodeSelector:
             {{- toYaml .Values.nodeSelector | nindent 12 }}
+          tolerations:
+            {{- toYaml .Values.tolerations | nindent 12 }}
           containers:
             - name: backup
               image: {{ include "hermes.privateImage" . | quote }}

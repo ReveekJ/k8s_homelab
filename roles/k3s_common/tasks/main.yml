@@ -14,6 +14,23 @@
     group: root
     validate: "visudo -cf %s"
 
+- name: Ensure temporary directory permissions
+  ansible.builtin.file:
+    path: /var/tmp
+    state: directory
+    owner: root
+    group: root
+    mode: "1777"
+
+- name: Check for interrupted package configuration
+  ansible.builtin.command: dpkg --audit
+  register: k3s_common_dpkg_audit
+  changed_when: false
+
+- name: Complete interrupted package configuration
+  ansible.builtin.command: dpkg --configure -a
+  when: k3s_common_dpkg_audit.stdout | length > 0
+
 - name: Update package list
   ansible.builtin.apt:
     update_cache: true

@@ -1,0 +1,9 @@
+apiVersion: v2
+name: openwebui
+description: Open WebUI with persistent application data and cluster-managed ingress.
+type: application
+version: 0.1.0
+dependencies:
+  - name: cluster
+    version: 0.1.0
+    repository: file://../../../charts/cluster

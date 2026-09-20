@@ -24,6 +24,8 @@ spec:
           limits:
             cpu: 250m
             memory: 192Mi
+        nodeSelector:
+          homelab.reveek.io/node-role: system
         prometheus:
           enabled: false
   destination:

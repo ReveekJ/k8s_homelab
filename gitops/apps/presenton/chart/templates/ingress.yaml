@@ -1,0 +1,28 @@
+{{- if .Values.ingress.enabled }}
+{{- $host := include "presenton.fqdn" . }}
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: presenton
+  labels:
+    app.kubernetes.io/name: presenton
+  annotations:
+    cert-manager.io/cluster-issuer: {{ .Values.ingress.clusterIssuer | quote }}
+spec:
+  ingressClassName: {{ .Values.ingress.className }}
+  tls:
+    - hosts:
+        - {{ $host }}
+      secretName: {{ .Values.ingress.tlsSecretName }}
+  rules:
+    - host: {{ $host }}
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: presenton
+                port:
+                  name: http
+{{- end }}

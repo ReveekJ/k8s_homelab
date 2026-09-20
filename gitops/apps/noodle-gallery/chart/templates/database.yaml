@@ -1,0 +1,67 @@
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: noodle-gallery-database
+  labels:
+    {{- include "noodle-gallery.labels" . | nindent 4 }}
+    app.kubernetes.io/component: database
+spec:
+  serviceName: noodle-gallery-database
+  replicas: 1
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: noodle-gallery
+      app.kubernetes.io/component: database
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: noodle-gallery
+        app.kubernetes.io/component: database
+    spec:
+      nodeSelector:
+        {{- toYaml .Values.nodeSelector | nindent 8 }}
+      tolerations:
+        {{- toYaml .Values.tolerations | nindent 8 }}
+      containers:
+        - name: database
+          image: {{ include "noodle-gallery.databaseImage" . | quote }}
+          imagePullPolicy: {{ .Values.image.database.pullPolicy }}
+          envFrom:
+            - secretRef:
+                name: {{ .Values.secretName }}
+          env:
+            - name: POSTGRES_USER
+              value: {{ .Values.database.user | quote }}
+            - name: POSTGRES_DB
+              value: {{ .Values.database.name | quote }}
+            - name: POSTGRES_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Values.secretName }}
+                  key: POSTGRES_PASSWORD
+            - name: POSTGRES_INITDB_ARGS
+              value: --data-checksums
+          ports:
+            - name: postgres
+              containerPort: {{ .Values.database.port }}
+          volumeMounts:
+            - name: database
+              mountPath: /var/lib/postgresql/data
+          resources:
+            {{- toYaml .Values.database.resources | nindent 12 }}
+          readinessProbe:
+            exec:
+              command: ["pg_isready", "-U", "{{ .Values.database.user }}", "-d", "{{ .Values.database.name }}"]
+            initialDelaySeconds: 10
+            periodSeconds: 10
+          livenessProbe:
+            exec:
+              command: ["pg_isready", "-U", "{{ .Values.database.user }}", "-d", "{{ .Values.database.name }}"]
+            initialDelaySeconds: 30
+            periodSeconds: 30
+          securityContext:
+            allowPrivilegeEscalation: false
+      volumes:
+        - name: database
+          persistentVolumeClaim:
+            claimName: noodle-gallery-database

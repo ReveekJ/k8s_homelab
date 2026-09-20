@@ -1,13 +1,42 @@
 ---
 - name: Install k3s agent
-  ansible.builtin.shell: |
-    set -o pipefail
-    curl -sfL {{ k3s_install_script_url }} | \
-      INSTALL_K3S_VERSION="{{ k3s_version }}" \
-      K3S_URL={{ k3s_server_url }} \
-      K3S_TOKEN={{ k3s_join_token }} \
-      sh -s - \
-      {{ k3s_worker_extra_args }}
-  args:
-    creates: /usr/local/bin/k3s
-  no_log: true
+  block:
+    - name: Run k3s agent installer
+      ansible.builtin.shell: |
+        set -o pipefail
+        curl -sfL {{ k3s_install_script_url }} | \
+          INSTALL_K3S_VERSION="{{ k3s_version }}" \
+          K3S_URL={{ k3s_server_url }} \
+          K3S_TOKEN={{ k3s_join_token }} \
+          sh -s - \
+          {{ k3s_worker_extra_args }} > /var/tmp/k3s-agent-install.log 2>&1
+      args:
+        creates: /usr/local/bin/k3s
+        executable: /bin/bash
+      environment:
+        CURL_IPRESOLVE: "4"
+      no_log: true
+  rescue:
+    - name: Read k3s agent installer log
+      ansible.builtin.slurp:
+        src: /var/tmp/k3s-agent-install.log
+      register: k3s_agent_install_log
+      no_log: true
+
+    - name: Report k3s agent installer failure
+      ansible.builtin.fail:
+        msg: "k3s agent installer failed: {{ k3s_agent_install_log.content | b64decode }}"
+
+- name: Label worker as application node
+  ansible.builtin.command:
+    cmd: kubectl label node {{ ansible_hostname }} homelab.reveek.io/node-role=application --overwrite
+  delegate_to: "{{ groups['k3s_master'][0] }}"
+  register: k3s_worker_label
+  changed_when: "'labeled' in k3s_worker_label.stdout or 'annotated' in k3s_worker_label.stdout"
+
+- name: Taint worker for application workloads
+  ansible.builtin.command:
+    cmd: kubectl taint node {{ ansible_hostname }} homelab.reveek.io/node-role=application:NoSchedule --overwrite
+  delegate_to: "{{ groups['k3s_master'][0] }}"
+  register: k3s_worker_taint
+  changed_when: "'tainted' in k3s_worker_taint.stdout or 'updated' in k3s_worker_taint.stdout"

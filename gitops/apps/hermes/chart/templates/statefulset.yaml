@@ -21,6 +21,8 @@ spec:
       {{- end }}
       nodeSelector:
         {{- toYaml .Values.nodeSelector | nindent 8 }}
+      tolerations:
+        {{- toYaml .Values.tolerations | nindent 8 }}
       containers:
         - name: serve
           image: {{ include "hermes.privateImage" . | quote }}

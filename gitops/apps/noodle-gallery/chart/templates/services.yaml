@@ -1,0 +1,44 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: noodle-gallery
+  labels:
+    {{- include "noodle-gallery.labels" . | nindent 4 }}
+spec:
+  selector:
+    app.kubernetes.io/name: noodle-gallery
+    app.kubernetes.io/component: server
+  ports:
+    - name: http
+      port: {{ .Values.server.port }}
+      targetPort: http
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: noodle-gallery-redis
+  labels:
+    {{- include "noodle-gallery.labels" . | nindent 4 }}
+spec:
+  selector:
+    app.kubernetes.io/name: noodle-gallery
+    app.kubernetes.io/component: redis
+  ports:
+    - name: redis
+      port: {{ .Values.redis.port }}
+      targetPort: redis
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: noodle-gallery-database
+  labels:
+    {{- include "noodle-gallery.labels" . | nindent 4 }}
+spec:
+  selector:
+    app.kubernetes.io/name: noodle-gallery
+    app.kubernetes.io/component: database
+  ports:
+    - name: postgres
+      port: {{ .Values.database.port }}
+      targetPort: postgres
