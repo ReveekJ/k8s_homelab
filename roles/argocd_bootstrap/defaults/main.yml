@@ -2,6 +2,7 @@
 argocd_version: v3.1.11
 argocd_namespace: argocd
 argocd_admin_password: "{{ argocd_admin_password_secret | default('changeme') }}"
+argocd_redis_image: redis:8.8.2
 
 argocd_resource_patches:
   - kind: deployment

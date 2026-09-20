@@ -15,7 +15,7 @@ spec:
     directory:
       recurse: true
       exclude: >-
-        {**/chart/**,**/templates/**,**/charts/**,secret-*.yaml,secret-generator.yaml,kustomization.yaml,*.md}
+        {**/chart/**,**/templates/**,**/charts/**,**/secret-*.yaml,kustomization.yaml,*.md}
   destination:
     server: https://kubernetes.default.svc
     namespace: argocd

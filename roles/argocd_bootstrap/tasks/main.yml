@@ -14,6 +14,14 @@
   register: argocd_install
   changed_when: "'configured' in argocd_install.stdout or 'created' in argocd_install.stdout"
 
+- name: Use Docker Hub Redis image for Argo CD
+  ansible.builtin.command:
+    cmd: >
+      kubectl -n {{ argocd_namespace }} set image
+      deployment/argocd-redis redis={{ argocd_redis_image }}
+  register: argocd_redis_image_update
+  changed_when: "'updated' in argocd_redis_image_update.stdout"
+
 - name: Pin Argo CD workloads to the system node
   ansible.builtin.command:
     cmd: kubectl -n {{ argocd_namespace }} patch {{ item.kind }}/{{ item.name }} --type merge -p '{{ item.patch }}'
@@ -74,12 +82,10 @@
 
 - name: Apply root Application (app-of-apps bootstrap)
   ansible.builtin.command:
-    cmd: >
-      kubectl apply -n {{ argocd_namespace }}
-      -f {{ playbook_dir }}/../gitops/bootstrap/root-app.yaml
+    cmd: kubectl apply -n {{ argocd_namespace }} -f -
+    stdin: "{{ lookup('file', playbook_dir ~ '/../gitops/bootstrap/root-app.yaml') }}"
   register: root_app_apply
   changed_when: "'configured' in root_app_apply.stdout or 'created' in root_app_apply.stdout"
-  delegate_to: "{{ groups['k3s_master'][0] }}"
 
 - name: Check if sops-age-key secret already exists
   ansible.builtin.command:
