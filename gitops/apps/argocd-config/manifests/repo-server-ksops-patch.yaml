@@ -31,5 +31,6 @@ spec:
             - name: sops-age-key
               mountPath: /etc/age-key
               readOnly: true
+          env:
             - name: SOPS_AGE_KEY_FILE
               value: /etc/age-key/key.txt
