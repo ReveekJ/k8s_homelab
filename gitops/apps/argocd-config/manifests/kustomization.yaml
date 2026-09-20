@@ -5,4 +5,5 @@ generators:
   - secret-generator.yaml
 
 resources:
+  - argocd-cmd-params-cm.yaml
   - repo-server-ksops-patch.yaml
