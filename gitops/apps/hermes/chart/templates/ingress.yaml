@@ -1,5 +1,5 @@
 {{- if .Values.ingress.enabled }}
-{{- $host := .Values.ingress.host | default (printf "hermes.%s" (.Values.baseDomain | default "reveek-io.ru")) }}
+{{- $host := .Values.ingress.host | default (include "hermes.fqdn" (dict "ctx" . "prefix" "hermes")) }}
 apiVersion: networking.k8s.io/v1
 kind: Ingress
 metadata:

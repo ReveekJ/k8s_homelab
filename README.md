@@ -23,6 +23,7 @@ gitops/bootstrap/                         Root Application (app-of-apps)
 gitops/apps/cert-manager/                 cert-manager Application + ClusterIssuer
 gitops/apps/registry/                     Docker Registry Application (twuni chart)
 gitops/apps/hermes/                       Hermes Agent chart + Application
+gitops/apps/actions-runner-controller/    GitHub Actions runners (ARC)
 images/hermes-agent/Dockerfile            Hermes container image
 ```
 

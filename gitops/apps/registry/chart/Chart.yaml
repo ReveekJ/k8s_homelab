@@ -1,0 +1,12 @@
+apiVersion: v2
+name: registry
+description: Private Docker registry with cluster-managed ingress.
+type: application
+version: 0.1.0
+dependencies:
+  - name: cluster
+    version: 0.1.0
+    repository: file://../../../charts/cluster
+  - name: docker-registry
+    version: 2.2.0
+    repository: https://twuni.github.io/docker-registry.helm

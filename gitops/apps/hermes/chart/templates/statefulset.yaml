@@ -23,7 +23,7 @@ spec:
         {{- toYaml .Values.nodeSelector | nindent 8 }}
       containers:
         - name: serve
-          image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
+          image: {{ include "hermes.privateImage" . | quote }}
           imagePullPolicy: {{ .Values.image.pullPolicy }}
           args: ["serve", "--host", "0.0.0.0", "--port", "{{ .Values.serve.port }}", "--skip-build"]
           env:
@@ -56,7 +56,7 @@ spec:
             initialDelaySeconds: 60
             periodSeconds: 30
         - name: gateway
-          image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
+          image: {{ include "hermes.privateImage" . | quote }}
           imagePullPolicy: {{ .Values.image.pullPolicy }}
           args: ["gateway", "run"]
           env:

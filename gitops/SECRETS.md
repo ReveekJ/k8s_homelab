@@ -6,6 +6,7 @@ All Kubernetes secrets in this repository are encrypted with [SOPS](https://gith
 
 - `gitops/apps/registry/secret-registry-auth.yaml` — htpasswd for the private docker registry
 - `gitops/apps/hermes/secret-hermes.yaml` — model provider API keys for hermes
+- `gitops/apps/actions-runner-controller/secret-gha-github-app.yaml` — GitHub App credentials for actions-runner-controller
 - `gitops/apps/argocd-config/manifests/secret-sops-age-key.yaml` — the age private key itself (installed into `argocd` namespace so Argo CD can decrypt everything)
 
 ## Decryption chain
@@ -22,6 +23,26 @@ Bootstrap order: the `sops-age-key` secret is created by the `argocd-config` App
 export SOPS_AGE_KEY_FILE=~/.config/sops/age-homelab/k8s-homelab.txt
 sops gitops/apps/hermes/secret-hermes.yaml
 ```
+
+## GitHub App for actions-runner-controller
+
+The runner scale set authenticates as a GitHub App (org-scoped runners).
+Create it once in the GitHub UI (org → Settings → Developer settings → New GitHub App):
+
+- Homepage URL: any valid URL (e.g. `https://reveek-io.ru`), Callback URL: `http://localhost`
+- Webhook: **uncheck** Active
+- Repository permissions: Administration (read/write), Metadata (read-only)
+- Organization permissions: Self-hosted runners (read/write)
+
+Then generate a private key (`.pem` download) and fill the encrypted secret:
+
+```sh
+export SOPS_AGE_KEY_FILE=~/.config/sops/age-homelab/k8s-homelab.txt
+sops gitops/apps/actions-runner-controller/secret-gha-github-app.yaml
+```
+
+Keys: `github_app_id` (App ID), `github_app_installation_id` (Installation ID
+from the app's install page), `github_app_private_key` (contents of the `.pem` file).
 
 ## Re-encrypting after key rotation
 

@@ -1,0 +1,9 @@
+dependencies:
+- name: cluster
+  repository: file://../../../charts/cluster
+  version: 0.1.0
+- name: docker-registry
+  repository: https://twuni.github.io/docker-registry.helm
+  version: 2.2.0
+digest: sha256:5270ebb3329790ff7beab901b96a2cef363cb001434f272d8ff5a1a3c12271c2
+generated: "2026-09-20T13:48:49.299026+05:00"

@@ -4,3 +4,7 @@ description: Hermes Agent fleet (serve + gateway) on Kubernetes
 type: application
 version: 0.1.0
 appVersion: "latest"
+dependencies:
+  - name: cluster
+    version: 0.1.0
+    repository: file://../../../charts/cluster

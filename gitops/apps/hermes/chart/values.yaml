@@ -3,7 +3,7 @@ hermesHome: /hermes
 projectsRoot: /srv/projects
 
 image:
-  repository: reg.reveek-io.ru/hermes-agent
+  repository: hermes-agent
   tag: latest
   pullPolicy: Always
 

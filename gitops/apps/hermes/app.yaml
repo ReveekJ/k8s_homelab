@@ -14,7 +14,7 @@ spec:
       path: gitops/apps/hermes/chart
       helm:
         valueFiles:
-          - $values/gitops/values-common.yaml
+          - $values/gitops/charts/cluster/values.yaml
           - values.yaml
     - repoURL: https://github.com/ReveekJ/k8s_homelab.git
       targetRevision: main

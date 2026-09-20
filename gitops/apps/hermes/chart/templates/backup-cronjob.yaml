@@ -22,7 +22,7 @@ spec:
             {{- toYaml .Values.nodeSelector | nindent 12 }}
           containers:
             - name: backup
-              image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
+              image: {{ include "hermes.privateImage" . | quote }}
               imagePullPolicy: {{ .Values.image.pullPolicy }}
               command:
                 - /bin/sh
