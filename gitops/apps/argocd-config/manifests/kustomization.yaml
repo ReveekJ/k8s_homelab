@@ -5,5 +5,4 @@ generators:
   - secret-generator.yaml
 
 resources:
-  - argocd-ingress.yaml
   - repo-server-ksops-patch.yaml
