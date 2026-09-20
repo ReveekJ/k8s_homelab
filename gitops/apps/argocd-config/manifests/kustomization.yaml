@@ -6,4 +6,5 @@ generators:
 
 resources:
   - argocd-cmd-params-cm.yaml
+  - argocd-cm.yaml
   - repo-server-ksops-patch.yaml
