@@ -1,31 +1,31 @@
 ---
 - name: Install k3s agent
   block:
+    - name: Download k3s installer
+      ansible.builtin.get_url:
+        url: "{{ k3s_install_script_url }}"
+        dest: /var/tmp/k3s-install.sh
+        mode: "0700"
+      environment:
+        CURL_IPRESOLVE: "4"
+
     - name: Run k3s agent installer
       ansible.builtin.shell: |
         set -o pipefail
-        curl -sfL {{ k3s_install_script_url }} | \
-          INSTALL_K3S_VERSION="{{ k3s_version }}" \
-          K3S_URL={{ k3s_server_url }} \
-          K3S_TOKEN={{ k3s_join_token }} \
-          sh -s - \
-          {{ k3s_worker_extra_args }} > /var/tmp/k3s-agent-install.log 2>&1
+        /var/tmp/k3s-install.sh {{ k3s_worker_extra_args }}
       args:
         creates: /usr/local/bin/k3s
         executable: /bin/bash
       environment:
-        CURL_IPRESOLVE: "4"
+        INSTALL_K3S_VERSION: "{{ k3s_version }}"
+        K3S_URL: "{{ k3s_server_url }}"
+        K3S_TOKEN: "{{ hostvars[groups['k3s_master'][0]].k3s_node_token_raw.content | b64decode | trim }}"
       no_log: true
-  rescue:
-    - name: Read k3s agent installer log
-      ansible.builtin.slurp:
-        src: /var/tmp/k3s-agent-install.log
-      register: k3s_agent_install_log
-      no_log: true
-
-    - name: Report k3s agent installer failure
-      ansible.builtin.fail:
-        msg: "k3s agent installer failed: {{ k3s_agent_install_log.content | b64decode }}"
+  always:
+    - name: Remove k3s installer
+      ansible.builtin.file:
+        path: /var/tmp/k3s-install.sh
+        state: absent
 
 - name: Label worker as application node
   ansible.builtin.command:
