@@ -22,6 +22,16 @@
   register: argocd_redis_image_update
   changed_when: "'updated' in argocd_redis_image_update.stdout"
 
+- name: Disable Argo CD internal TLS redirect behind Traefik
+  ansible.builtin.command:
+    cmd: >
+      kubectl -n {{ argocd_namespace }} patch configmap argocd-cmd-params-cm
+      --type merge
+      -p '{"data":{"server.insecure":"true"}}'
+  register: argocd_server_insecure
+  changed_when: "'patched' in argocd_server_insecure.stdout"
+  notify: Restart Argo CD server
+
 - name: Pin Argo CD workloads to the system node
   ansible.builtin.command:
     cmd: kubectl -n {{ argocd_namespace }} patch {{ item.kind }}/{{ item.name }} --type merge -p '{{ item.patch }}'
