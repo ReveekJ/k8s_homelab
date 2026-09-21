@@ -14,6 +14,13 @@
   register: argocd_install
   changed_when: "'configured' in argocd_install.stdout or 'created' in argocd_install.stdout"
 
+- name: Create Argo CD repository-server build options before controller startup
+  ansible.builtin.command:
+    cmd: kubectl apply -f -
+    stdin: "{{ lookup('file', playbook_dir ~ '/../gitops/apps/argocd-config/manifests/argocd-cm.yaml') }}"
+  register: argocd_cm_bootstrap
+  changed_when: "'configured' in argocd_cm_bootstrap.stdout or 'created' in argocd_cm_bootstrap.stdout"
+
 - name: Use Docker Hub Redis image for Argo CD
   ansible.builtin.command:
     cmd: >
