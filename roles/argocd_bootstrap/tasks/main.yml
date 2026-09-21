@@ -21,6 +21,18 @@
   register: argocd_cm_bootstrap
   changed_when: "'configured' in argocd_cm_bootstrap.stdout or 'created' in argocd_cm_bootstrap.stdout"
 
+- name: Stage ksops repo-server patch
+  ansible.builtin.copy:
+    src: "{{ playbook_dir }}/../gitops/apps/argocd-config/manifests/repo-server-ksops-patch.yaml"
+    dest: /tmp/repo-server-ksops-patch.yaml
+    mode: "0644"
+
+- name: Install ksops into the Argo CD repository server
+  ansible.builtin.command:
+    cmd: kubectl -n {{ argocd_namespace }} patch deployment argocd-repo-server --type strategic --patch-file /tmp/repo-server-ksops-patch.yaml
+  register: argocd_ksops_patch
+  changed_when: "'patched' in argocd_ksops_patch.stdout"
+
 - name: Use Docker Hub Redis image for Argo CD
   ansible.builtin.command:
     cmd: >
