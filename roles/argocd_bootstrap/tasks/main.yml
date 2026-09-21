@@ -118,13 +118,16 @@
 
 - name: Check if sops-age-key secret already exists
   ansible.builtin.command:
-    cmd: kubectl -n {{ argocd_namespace }} get secret sops-age-key
+    cmd: >-
+      sh -c 'kubectl -n {{ argocd_namespace }} get secret sops-age-key
+      -o jsonpath="{.data.key\\.txt}" | base64 --decode'
   register: sops_age_key_check
   changed_when: false
-  failed_when: sops_age_key_check.rc != 0 and "NotFound" not in sops_age_key_check.stderr
+  failed_when: false
+  no_log: true
 
 - name: Decrypt and apply sops-age-key secret (initial bootstrap)
-  when: "'NotFound' in sops_age_key_check.stderr"
+  when: sops_age_key_check.rc != 0 or sops_age_key_check.stdout == 'AGE_KEY_PLACEHOLDER'
   block:
     - name: Read encrypted age key secret from repo
       ansible.builtin.slurp:
@@ -138,8 +141,17 @@
       ansible.builtin.command:
         cmd: >
           kubectl -n {{ argocd_namespace }} apply -f -
-        stdin: "{{ decrypted_age_key_manifest }}"
+        stdin: "{{ real_age_key_manifest }}"
       vars:
-        decrypted_age_key_manifest: "{{ lookup('pipe', 'SOPS_AGE_KEY_FILE=' ~ sops_age_key_file_local ~ ' sops -d ' ~ playbook_dir ~ '/../gitops/apps/argocd-config/manifests/secret-sops-age-key.yaml') }}"
+        real_age_key_manifest: |-
+          apiVersion: v1
+          kind: Secret
+          metadata:
+            name: sops-age-key
+            namespace: {{ argocd_namespace }}
+          type: Opaque
+          stringData:
+            key.txt: |
+          {{ lookup('file', sops_age_key_file_local) | indent(6, true) }}
       register: age_key_apply
       changed_when: "'configured' in age_key_apply.stdout or 'created' in age_key_apply.stdout"
