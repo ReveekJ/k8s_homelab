@@ -1,6 +1,6 @@
 image:
-  repository: ghcr.io/open-webui/open-webui
-  tag: v0.6.46
+  repository: openwebui/open-webui
+  tag: 0.11.4
   pullPolicy: IfNotPresent
 
 replicaCount: 1

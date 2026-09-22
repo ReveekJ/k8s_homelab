@@ -65,10 +65,10 @@ persistence:
   storageClass: local-path
   databaseSize: 50Gi
   library:
-    hostPath: /mnt/hub_drive_2/immich/library
-    size: 250Gi
+    hostPath: /mnt/hub_drive_2/noodle
+    size: 900Gi
   backup:
-    hostPath: /mnt/hub_drive_2/immich_backup
+    hostPath: /mnt/hub_drive_2/immich
 
 ingress:
   enabled: true

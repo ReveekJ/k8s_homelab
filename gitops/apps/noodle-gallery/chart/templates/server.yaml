@@ -74,7 +74,7 @@ spec:
       volumes:
         - name: library
           persistentVolumeClaim:
-            claimName: noodle-gallery-library
+            claimName: noodle-gallery-library-noodle
         - name: backup
           hostPath:
             path: {{ .Values.persistence.backup.hostPath }}
