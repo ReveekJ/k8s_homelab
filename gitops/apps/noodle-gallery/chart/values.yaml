@@ -68,7 +68,7 @@ persistence:
     hostPath: /mnt/hub_drive_2/noodle
     size: 900Gi
   backup:
-    hostPath: /mnt/hub_drive_2/immich
+    hostPath: /mnt/hub_drive_2/immich/library
 
 ingress:
   enabled: true
