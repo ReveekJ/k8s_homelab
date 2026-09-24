@@ -1,0 +1,5 @@
+apiVersion: v2
+name: searxng
+description: SearXNG metasearch engine.
+type: application
+version: 0.1.0

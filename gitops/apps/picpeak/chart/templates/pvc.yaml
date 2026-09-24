@@ -1,0 +1,69 @@
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: picpeak-postgres
+  labels:
+    {{- include "picpeak.labels" . | nindent 4 }}
+    app.kubernetes.io/component: postgres
+spec:
+  accessModes: [ReadWriteOnce]
+  storageClassName: {{ .Values.postgres.persistence.storageClass }}
+  resources:
+    requests:
+      storage: {{ .Values.postgres.persistence.size }}
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: picpeak-redis
+  labels:
+    {{- include "picpeak.labels" . | nindent 4 }}
+    app.kubernetes.io/component: redis
+spec:
+  accessModes: [ReadWriteOnce]
+  storageClassName: {{ .Values.redis.persistence.storageClass }}
+  resources:
+    requests:
+      storage: {{ .Values.redis.persistence.size }}
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: picpeak-storage
+  labels:
+    {{- include "picpeak.labels" . | nindent 4 }}
+    app.kubernetes.io/component: backend
+spec:
+  accessModes: [ReadWriteOnce]
+  storageClassName: {{ .Values.persistence.storageClass }}
+  resources:
+    requests:
+      storage: {{ .Values.persistence.storageSize }}
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: picpeak-data
+  labels:
+    {{- include "picpeak.labels" . | nindent 4 }}
+    app.kubernetes.io/component: backend
+spec:
+  accessModes: [ReadWriteOnce]
+  storageClassName: {{ .Values.persistence.storageClass }}
+  resources:
+    requests:
+      storage: {{ .Values.persistence.dataSize }}
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: picpeak-logs
+  labels:
+    {{- include "picpeak.labels" . | nindent 4 }}
+    app.kubernetes.io/component: backend
+spec:
+  accessModes: [ReadWriteOnce]
+  storageClassName: {{ .Values.persistence.storageClass }}
+  resources:
+    requests:
+      storage: {{ .Values.persistence.logsSize }}

@@ -1,0 +1,108 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: picpeak-backend
+  labels:
+    {{- include "picpeak.labels" . | nindent 4 }}
+    app.kubernetes.io/component: backend
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: picpeak
+      app.kubernetes.io/component: backend
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: picpeak
+        app.kubernetes.io/component: backend
+    spec:
+      {{- with .Values.imagePullSecrets }}
+      imagePullSecrets:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      nodeSelector:
+        {{- toYaml .Values.nodeSelector | nindent 8 }}
+      tolerations:
+        {{- toYaml .Values.tolerations | nindent 8 }}
+      containers:
+        - name: backend
+          image: {{ include "picpeak.image" .Values.image.backend | quote }}
+          imagePullPolicy: {{ .Values.image.backend.pullPolicy }}
+          env:
+            - name: NODE_ENV
+              value: production
+            - name: DB_HOST
+              value: postgres
+            - name: DB_USER
+              value: {{ .Values.postgres.user | quote }}
+            - name: DB_NAME
+              value: {{ .Values.postgres.database | quote }}
+            - name: REDIS_HOST
+              value: redis
+            - name: STORAGE_PATH
+              value: /app/storage
+            - name: PHOTOS_DIR
+              value: /app/storage/events
+            - name: FRONTEND_URL
+              value: {{ .Values.application.publicUrl | quote }}
+            - name: ADMIN_URL
+              value: {{ .Values.application.publicUrl | quote }}
+            - name: BRAND_TITLE
+              value: {{ .Values.application.brandTitle | quote }}
+            - name: BRAND_DESCRIPTION
+              value: {{ .Values.application.brandDescription | quote }}
+            - name: JWT_SECRET
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Values.secretName }}
+                  key: JWT_SECRET
+            - name: DB_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Values.secretName }}
+                  key: DB_PASSWORD
+            - name: REDIS_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Values.secretName }}
+                  key: REDIS_PASSWORD
+          ports:
+            - name: http
+              containerPort: {{ .Values.backend.port }}
+          volumeMounts:
+            - name: storage
+              mountPath: /app/storage
+            - name: data
+              mountPath: /app/data
+            - name: logs
+              mountPath: /app/logs
+          resources:
+            {{- toYaml .Values.backend.resources | nindent 12 }}
+          startupProbe:
+            httpGet:
+              path: /health
+              port: http
+            failureThreshold: 30
+            periodSeconds: 10
+          readinessProbe:
+            httpGet:
+              path: /health
+              port: http
+            periodSeconds: 10
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: http
+            initialDelaySeconds: 30
+            periodSeconds: 30
+      volumes:
+        - name: storage
+          persistentVolumeClaim:
+            claimName: picpeak-storage
+        - name: data
+          persistentVolumeClaim:
+            claimName: picpeak-data
+        - name: logs
+          persistentVolumeClaim:
+            claimName: picpeak-logs

@@ -1,0 +1,95 @@
+image:
+  backend:
+    repository: ghcr.io/picpeak/picpeak/backend
+    tag: stable
+    pullPolicy: IfNotPresent
+  frontend:
+    repository: ghcr.io/picpeak/picpeak/frontend
+    tag: stable
+    pullPolicy: IfNotPresent
+  postgres:
+    repository: postgres
+    tag: 15-alpine
+    pullPolicy: IfNotPresent
+  redis:
+    repository: redis
+    tag: 7-alpine
+    pullPolicy: IfNotPresent
+
+imagePullSecrets: []
+secretName: picpeak-secrets
+
+nodeSelector:
+  kubernetes.io/hostname: debian-hp
+
+tolerations:
+  - key: homelab.reveek.io/node-role
+    operator: Equal
+    value: application
+    effect: NoSchedule
+
+backend:
+  port: 3000
+  resources:
+    requests:
+      cpu: 250m
+      memory: 512Mi
+    limits:
+      cpu: "1"
+      memory: 2Gi
+
+frontend:
+  port: 80
+  resources:
+    requests:
+      cpu: 50m
+      memory: 64Mi
+    limits:
+      cpu: 250m
+      memory: 256Mi
+
+postgres:
+  port: 5432
+  database: picpeak_prod
+  user: picpeak
+  resources:
+    requests:
+      cpu: 100m
+      memory: 256Mi
+    limits:
+      cpu: "1"
+      memory: 1Gi
+  persistence:
+    storageClass: local-path
+    size: 20Gi
+
+redis:
+  port: 6379
+  resources:
+    requests:
+      cpu: 50m
+      memory: 64Mi
+    limits:
+      cpu: 250m
+      memory: 256Mi
+  persistence:
+    storageClass: local-path
+    size: 5Gi
+
+persistence:
+  storageClass: local-path
+  storageSize: 100Gi
+  dataSize: 10Gi
+  logsSize: 10Gi
+
+application:
+  publicUrl: https://picpeak.reveek-io.ru
+  brandTitle: PicPeak
+  brandDescription: Photo gallery shared with PicPeak.
+
+ingress:
+  enabled: true
+  className: traefik
+  host: picpeak.reveek-io.ru
+  clusterIssuer: letsencrypt
+  tlsSecretName: picpeak-tls

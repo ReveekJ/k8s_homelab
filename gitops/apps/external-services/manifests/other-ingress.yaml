@@ -2,54 +2,6 @@
 apiVersion: networking.k8s.io/v1
 kind: Ingress
 metadata:
-  name: searxng
-  namespace: external-services
-  annotations:
-    cert-manager.io/cluster-issuer: letsencrypt
-spec:
-  ingressClassName: traefik
-  tls:
-    - hosts:
-        - searxng.reveek-io.ru
-      secretName: searxng-tls
-  rules:
-    - host: searxng.reveek-io.ru
-      http:
-        paths:
-          - path: /
-            pathType: Prefix
-            backend:
-              service:
-                name: searxng
-                port:
-                  number: 8888
----
-apiVersion: v1
-kind: Service
-metadata:
-  name: searxng
-  namespace: external-services
-spec:
-  ports:
-    - name: http
-      port: 8888
-      targetPort: 8888
----
-apiVersion: v1
-kind: Endpoints
-metadata:
-  name: searxng
-  namespace: external-services
-subsets:
-  - addresses:
-      - ip: 192.168.1.10
-    ports:
-      - name: http
-        port: 8888
----
-apiVersion: networking.k8s.io/v1
-kind: Ingress
-metadata:
   name: root
   namespace: external-services
   annotations:

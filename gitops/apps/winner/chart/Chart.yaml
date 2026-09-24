@@ -1,0 +1,5 @@
+apiVersion: v2
+name: winner
+description: Winner static website.
+type: application
+version: 0.1.0

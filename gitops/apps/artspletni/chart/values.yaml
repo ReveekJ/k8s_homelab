@@ -1,0 +1,90 @@
+image:
+  backend:
+    repository: reg.reveek-io.ru/artspletni-backend
+    tag: latest
+    pullPolicy: IfNotPresent
+  frontend:
+    repository: reg.reveek-io.ru/artspletni-frontend
+    tag: latest
+    pullPolicy: IfNotPresent
+  postgres:
+    repository: postgres
+    tag: 16-alpine
+    pullPolicy: IfNotPresent
+  minio:
+    repository: minio/minio
+    tag: RELEASE.2024-06-13T22-53-53Z
+    pullPolicy: IfNotPresent
+
+imagePullSecrets: []
+secretName: artspletni-secrets
+
+nodeSelector:
+  kubernetes.io/hostname: debian-hp
+
+tolerations:
+  - key: homelab.reveek.io/node-role
+    operator: Equal
+    value: application
+    effect: NoSchedule
+
+backend:
+  port: 8000
+  resources:
+    requests:
+      cpu: 250m
+      memory: 512Mi
+    limits:
+      cpu: "1"
+      memory: 2Gi
+
+frontend:
+  port: 80
+  resources:
+    requests:
+      cpu: 50m
+      memory: 64Mi
+    limits:
+      cpu: 250m
+      memory: 256Mi
+
+postgres:
+  port: 5432
+  database: artspletni
+  user: artspletni
+  persistence:
+    storageClass: local-path
+    size: 20Gi
+  resources:
+    requests:
+      cpu: 100m
+      memory: 256Mi
+    limits:
+      cpu: "1"
+      memory: 1Gi
+
+minio:
+  apiPort: 9000
+  consolePort: 9001
+  bucket: tracks
+  persistence:
+    storageClass: local-path
+    size: 100Gi
+  resources:
+    requests:
+      cpu: 100m
+      memory: 256Mi
+    limits:
+      cpu: "1"
+      memory: 1Gi
+
+application:
+  publicUrl: https://artspletni.reveek-io.ru
+  minioPublicEndpoint: https://artspletni.reveek-io.ru
+
+ingress:
+  enabled: true
+  className: traefik
+  host: artspletni.reveek-io.ru
+  clusterIssuer: letsencrypt
+  tlsSecretName: artspletni-tls

@@ -1,0 +1,42 @@
+image:
+  repository: searxng/searxng
+  tag: latest
+  pullPolicy: IfNotPresent
+
+imagePullSecrets: []
+secretName: searxng-secrets
+
+nodeSelector:
+  kubernetes.io/hostname: debian-hp
+
+tolerations:
+  - key: homelab.reveek.io/node-role
+    operator: Equal
+    value: application
+    effect: NoSchedule
+
+service:
+  port: 8080
+
+resources:
+  requests:
+    cpu: 100m
+    memory: 256Mi
+  limits:
+    cpu: 500m
+    memory: 1Gi
+
+persistence:
+  enabled: true
+  storageClass: local-path
+  size: 5Gi
+
+config:
+  baseUrl: https://searxng.reveek-io.ru/
+
+ingress:
+  enabled: true
+  className: traefik
+  host: searxng.reveek-io.ru
+  clusterIssuer: letsencrypt
+  tlsSecretName: searxng-tls
