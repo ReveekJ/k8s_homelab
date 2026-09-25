@@ -29,7 +29,7 @@ spec:
             - /bin/sh
             - -c
             - >-
-              for directory in thumbs encoded-video backups profile library; do
+              for directory in upload thumbs encoded-video backups profile library; do
               mkdir -p "/usr/src/app/upload/${directory}" && touch "/usr/src/app/upload/${directory}/.immich" || exit 1;
               done
           volumeMounts:
