@@ -109,6 +109,27 @@
     cmd: kubectl -n {{ argocd_namespace }} rollout status deployment/argocd-server --timeout=300s
   changed_when: false
 
+- name: Register private GitOps repository in Argo CD
+  ansible.builtin.command:
+    cmd: kubectl apply -f -
+    stdin: |-
+      apiVersion: v1
+      kind: Secret
+      metadata:
+        name: gitops-repository
+        namespace: {{ argocd_namespace }}
+        labels:
+          argocd.argoproj.io/secret-type: repository
+      type: Opaque
+      stringData:
+        type: git
+        url: {{ gitops_repo_url }}
+        username: ReveekJ
+        password: {{ github_token }}
+  no_log: true
+  register: gitops_repository_apply
+  changed_when: "'configured' in gitops_repository_apply.stdout or 'created' in gitops_repository_apply.stdout"
+
 - name: Apply root Application (app-of-apps bootstrap)
   ansible.builtin.command:
     cmd: kubectl apply -n {{ argocd_namespace }} -f -

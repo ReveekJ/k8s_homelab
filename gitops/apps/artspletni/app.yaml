@@ -3,6 +3,18 @@ kind: Application
 metadata:
   name: artspletni
   namespace: argocd
+  annotations:
+    argocd-image-updater.argoproj.io/image-list: >-
+      backend=reg.reveek-io.ru/artspletni-backend,
+      frontend=reg.reveek-io.ru/artspletni-frontend
+    argocd-image-updater.argoproj.io/backend.update-strategy: newest-build
+    argocd-image-updater.argoproj.io/frontend.update-strategy: newest-build
+    argocd-image-updater.argoproj.io/backend.helm.image-name: image.backend.repository
+    argocd-image-updater.argoproj.io/backend.helm.image-tag: image.backend.tag
+    argocd-image-updater.argoproj.io/frontend.helm.image-name: image.frontend.repository
+    argocd-image-updater.argoproj.io/frontend.helm.image-tag: image.frontend.tag
+    argocd-image-updater.argoproj.io/write-back-method: git:secret:argocd/argocd-image-updater-git
+    argocd-image-updater.argoproj.io/write-back-target: helmvalues:gitops/apps/artspletni/chart/values.yaml
   finalizers:
     - resources-finalizer.argoproj.io
 spec:

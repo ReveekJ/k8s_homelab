@@ -30,13 +30,7 @@ spec:
           maxRunners: 1
           minRunners: 0
           containerMode:
-            type: kubernetes
-            kubernetesModeWorkVolumeClaim:
-              accessModes: ["ReadWriteOnce"]
-              storageClassName: local-path
-              resources:
-                requests:
-                  storage: 1Gi
+            type: dind
           template:
             spec:
               nodeSelector:
@@ -50,6 +44,9 @@ spec:
                 - name: runner
                   image: ghcr.io/actions/actions-runner:latest
                   command: ["/home/runner/run.sh"]
+                  env:
+                    - name: DOCKER_HOST
+                      value: unix:///var/run/docker.sock
                   resources:
                     requests:
                       cpu: 100m

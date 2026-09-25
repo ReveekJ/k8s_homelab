@@ -46,6 +46,40 @@
     name: "{{ k3s_common_packages }}"
     state: present
 
+- name: Ensure systemd logind configuration directory exists
+  ansible.builtin.file:
+    path: /etc/systemd/logind.conf.d
+    state: directory
+    owner: root
+    group: root
+    mode: "0755"
+
+- name: Ignore laptop lid close and disable logind sleep actions
+  ansible.builtin.copy:
+    content: |
+      [Login]
+      HandleLidSwitch=ignore
+      HandleLidSwitchExternalPower=ignore
+      HandleLidSwitchDocked=ignore
+      HandleSuspendKey=ignore
+      HandleHibernateKey=ignore
+      HandlePowerKey=ignore
+    dest: "{{ k3s_common_logind_sleep_conf }}"
+    mode: "0644"
+    owner: root
+    group: root
+  notify: Restart systemd-logind
+
+- name: Disable systemd sleep and hibernation targets
+  ansible.builtin.systemd_service:
+    name: "{{ item }}"
+    masked: true
+  loop:
+    - sleep.target
+    - suspend.target
+    - hibernate.target
+    - hybrid-sleep.target
+
 - name: Ensure authorized key for ansible user
   ansible.builtin.copy:
     content: "{{ k3s_common_public_key }}"
