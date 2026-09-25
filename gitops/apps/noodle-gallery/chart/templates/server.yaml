@@ -21,6 +21,20 @@ spec:
         {{- toYaml .Values.nodeSelector | nindent 8 }}
       tolerations:
         {{- toYaml .Values.tolerations | nindent 8 }}
+      initContainers:
+        - name: initialize-storage
+          image: {{ include "noodle-gallery.serverImage" . | quote }}
+          imagePullPolicy: {{ .Values.image.server.pullPolicy }}
+          command:
+            - /bin/sh
+            - -c
+            - >-
+              for directory in thumbs encoded-video backups profile library; do
+              mkdir -p "/usr/src/app/upload/${directory}" && touch "/usr/src/app/upload/${directory}/.immich" || exit 1;
+              done
+          volumeMounts:
+            - name: library
+              mountPath: /usr/src/app/upload
       containers:
         - name: server
           image: {{ include "noodle-gallery.serverImage" . | quote }}
