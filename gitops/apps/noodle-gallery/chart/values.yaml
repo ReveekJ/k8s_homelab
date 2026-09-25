@@ -32,19 +32,19 @@ server:
   resources:
     requests:
       cpu: 500m
-      memory: 512Mi
+      memory: 256Mi
     limits:
       cpu: "2"
-      memory: 4Gi
+      memory: 1Gi
 
 machineLearning:
   resources:
     requests:
       cpu: 250m
-      memory: 1Gi
+      memory: 512Mi
     limits:
       cpu: "2"
-      memory: 4Gi
+      memory: 2Gi
 
 redis:
   port: 6379
@@ -56,10 +56,10 @@ database:
   resources:
     requests:
       cpu: 500m
-      memory: 256Mi
+      memory: 128Mi
     limits:
       cpu: "2"
-      memory: 4Gi
+      memory: 1Gi
 
 persistence:
   storageClass: local-path

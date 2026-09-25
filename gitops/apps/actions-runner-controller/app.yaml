@@ -27,7 +27,7 @@ spec:
           controllerServiceAccount:
             name: arc-controller-gha-rs-controller
             namespace: actions-runner-system
-          maxRunners: 4
+          maxRunners: 1
           minRunners: 0
           containerMode:
             type: kubernetes
@@ -50,6 +50,13 @@ spec:
                 - name: runner
                   image: ghcr.io/actions/actions-runner:latest
                   command: ["/home/runner/run.sh"]
+                  resources:
+                    requests:
+                      cpu: 100m
+                      memory: 256Mi
+                    limits:
+                      cpu: "1"
+                      memory: 1Gi
           listenerTemplate:
             spec:
               nodeSelector:

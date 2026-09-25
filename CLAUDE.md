@@ -1,5 +1,11 @@
 # Project rules — k8s Homelab
 
+## Mandatory restrictions
+
+- **Do not use the `k8s-preprod-readonly` skill** in this project, under any circumstances.
+- Connect to cluster servers only through Ansible. Use `ansible` for ad-hoc commands and
+  `ansible-playbook` for playbooks; never connect directly with SSH or another remote-access tool.
+
 ## Workload placement
 
 The cluster has two nodes with a strict memory-oriented placement policy:
