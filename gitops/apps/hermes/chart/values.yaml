@@ -14,8 +14,8 @@ serve:
   port: 9119
   resources:
     requests:
-      cpu: 250m
-      memory: 512Mi
+      cpu: 100m
+      memory: 256Mi
     limits:
       cpu: "1"
       memory: 1Gi
@@ -23,8 +23,8 @@ serve:
 gateway:
   resources:
     requests:
-      cpu: 250m
-      memory: 256Mi
+      cpu: 100m
+      memory: 128Mi
     limits:
       cpu: "1"
       memory: 768Mi

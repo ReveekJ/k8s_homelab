@@ -31,7 +31,7 @@ server:
   port: 2283
   resources:
     requests:
-      cpu: 500m
+      cpu: 250m
       memory: 256Mi
     limits:
       cpu: "2"
@@ -40,8 +40,8 @@ server:
 machineLearning:
   resources:
     requests:
-      cpu: 250m
-      memory: 512Mi
+      cpu: 100m
+      memory: 256Mi
     limits:
       cpu: "2"
       memory: 2Gi
@@ -55,7 +55,7 @@ database:
   user: postgres
   resources:
     requests:
-      cpu: 500m
+      cpu: 100m
       memory: 128Mi
     limits:
       cpu: "2"
