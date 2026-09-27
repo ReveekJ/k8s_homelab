@@ -1,5 +1,0 @@
-apiVersion: v2
-name: artspletni
-description: Art Spletni audio guide platform.
-type: application
-version: 0.1.0
