@@ -27,6 +27,8 @@ spec:
           image: {{ printf "%s:%s" .Values.image.repository .Values.image.tag | quote }}
           imagePullPolicy: {{ .Values.image.pullPolicy }}
           env:
+            - name: GRANIAN_WORKERS
+              value: {{ .Values.workers | quote }}
             - name: SEARXNG_BASE_URL
               value: {{ .Values.config.baseUrl | quote }}
             - name: SEARXNG_SECRET
@@ -38,8 +40,10 @@ spec:
             - name: http
               containerPort: {{ .Values.service.port }}
           volumeMounts:
-            - name: data
+            - name: settings
               mountPath: /etc/searxng
+            - name: data
+              mountPath: /var/cache/searxng
           resources:
             {{- toYaml .Values.resources | nindent 12 }}
           startupProbe:
@@ -60,6 +64,9 @@ spec:
             initialDelaySeconds: 30
             periodSeconds: 30
       volumes:
+        - name: settings
+          configMap:
+            name: searxng-settings
         - name: data
           persistentVolumeClaim:
             claimName: searxng

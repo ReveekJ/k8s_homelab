@@ -18,6 +18,12 @@ tolerations:
 service:
   port: 8080
 
+workers: 2
+
+config:
+  baseUrl: https://searxng.reveek-io.ru/
+  limiter: false
+
 resources:
   requests:
     cpu: 100m
@@ -30,9 +36,6 @@ persistence:
   enabled: true
   storageClass: local-path
   size: 5Gi
-
-config:
-  baseUrl: https://searxng.reveek-io.ru/
 
 ingress:
   enabled: true
