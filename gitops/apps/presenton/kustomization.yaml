@@ -4,4 +4,4 @@ kind: Kustomization
 namespace: presenton
 
 generators:
-	- secret-generator.yaml
+  - secret-generator.yaml
