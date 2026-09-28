@@ -11,3 +11,8 @@ data:
     server:
       limiter: {{ .Values.config.limiter }}
       image_proxy: true
+
+    search:
+      formats:
+        - html
+        - json
