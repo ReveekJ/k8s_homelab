@@ -8,10 +8,11 @@ data:
   settings.yml: |
     use_default_settings: true
 
-    formats:
-      - html
-      - json
-
     server:
       limiter: {{ .Values.config.limiter }}
       image_proxy: true
+
+    search:
+      formats:
+        - html
+        - json
