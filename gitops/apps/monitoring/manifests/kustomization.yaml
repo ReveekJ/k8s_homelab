@@ -8,4 +8,6 @@ resources:
   - alloy-config.yaml
   - alloy-daemonset.yaml
   - grafana-ingress.yaml
+
+generators:
   - grafana-admin-generator.yaml

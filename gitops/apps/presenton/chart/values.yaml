@@ -42,4 +42,5 @@ tolerations:
     value: application
     effect: NoSchedule
 
-env: {}
+env:
+  MIGRATE_DATABASE_ON_STARTUP: "false"
