@@ -26,10 +26,15 @@ docker-registry:
       value: Registry Realm
     - name: REGISTRY_AUTH_HTPASSWD_PATH
       value: /auth/htpasswd
-  extraSecretMounts:
+  extraVolumes:
     - name: auth
-      secretName: registry-auth
-      path: /auth
+      secret:
+        secretName: registry-auth
+  extraVolumeMounts:
+    - name: auth
+      mountPath: /auth/htpasswd
+      subPath: htpasswd
+      readOnly: true
   resources:
     requests:
       cpu: 50m
