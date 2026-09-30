@@ -16,7 +16,7 @@ spec:
         valueFiles:
           - $values/gitops/charts/cluster/values.yaml
           - values.yaml
-    - repoURL: https://github.com/reveekj/k8s_homelab.git
+    - repoURL: https://github.com/ReveekJ/k8s_homelab.git
       targetRevision: main
       path: gitops/apps/winner
       kustomize: {}

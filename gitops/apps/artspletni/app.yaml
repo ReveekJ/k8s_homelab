@@ -20,7 +20,7 @@ spec:
       targetRevision: main
       path: gitops/apps/artspletni
       kustomize: {}
-    - repoURL: https://github.com/reveekj/k8s_homelab.git
+    - repoURL: https://github.com/ReveekJ/k8s_homelab.git
       targetRevision: main
       ref: values
   destination:
