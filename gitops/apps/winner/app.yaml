@@ -1,0 +1,34 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: winner
+  namespace: argocd
+  finalizers:
+    - resources-finalizer.argoproj.io
+spec:
+  project: default
+  sources:
+    - repoURL: https://github.com/ReveekJ/k8s_homelab.git
+      targetRevision: main
+      path: gitops/apps/winner/chart
+      helm:
+        releaseName: winner
+        valueFiles:
+          - $values/gitops/charts/cluster/values.yaml
+          - values.yaml
+    - repoURL: https://github.com/reveekj/k8s_homelab.git
+      targetRevision: main
+      path: gitops/apps/winner
+      kustomize: {}
+    - repoURL: https://github.com/reveekj/k8s_homelab.git
+      targetRevision: main
+      ref: values
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: winner
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+      - CreateNamespace=true
