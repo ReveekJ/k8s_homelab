@@ -24,7 +24,7 @@ argocd_resource_patches:
   - kind: statefulset
     name: argocd-application-controller
     memory_request: 256Mi
-    memory_limit: 512Mi
+    memory_limit: 1Gi
 
 gitops_repo_url: https://github.com/ReveekJ/k8s_homelab.git
 gitops_repo_revision: main
