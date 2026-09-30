@@ -1,5 +1,0 @@
-apiVersion: v2
-name: winner
-description: Temporary empty chart used to finalize Argo CD resource pruning.
-type: application
-version: 0.0.0
