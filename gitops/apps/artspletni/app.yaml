@@ -7,22 +7,12 @@ metadata:
     - resources-finalizer.argoproj.io
 spec:
   project: default
-  sources:
-    - repoURL: https://github.com/ReveekJ/k8s_homelab.git
-      targetRevision: main
-      path: gitops/apps/artspletni/chart
-      helm:
-        releaseName: artspletni
-        valueFiles:
-          - $values/gitops/charts/cluster/values.yaml
-          - values.yaml
-    - repoURL: https://github.com/ReveekJ/k8s_homelab.git
-      targetRevision: main
-      path: gitops/apps/artspletni
-      kustomize: {}
-    - repoURL: https://github.com/ReveekJ/k8s_homelab.git
-      targetRevision: main
-      ref: values
+  source:
+    repoURL: https://github.com/ReveekJ/k8s_homelab.git
+    targetRevision: main
+    path: gitops/apps/artspletni/chart
+    helm:
+      releaseName: artspletni
   destination:
     server: https://kubernetes.default.svc
     namespace: artspletni
