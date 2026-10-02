@@ -52,6 +52,29 @@ spec:
               value: {{ .Values.application.brandTitle | quote }}
             - name: BRAND_DESCRIPTION
               value: {{ .Values.application.brandDescription | quote }}
+            - name: SMTP_ENABLED
+              value: "true"
+            - name: SMTP_HOST
+              value: smtp.yandex.ru
+            - name: SMTP_PORT
+              value: "587"
+            - name: SMTP_SECURE
+              value: "false"
+            - name: EMAIL_FROM
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Values.secretName }}
+                  key: EMAIL_FROM
+            - name: SMTP_USER
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Values.secretName }}
+                  key: SMTP_USER
+            - name: SMTP_PASS
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Values.secretName }}
+                  key: SMTP_PASS
             - name: JWT_SECRET
               valueFrom:
                 secretKeyRef:
