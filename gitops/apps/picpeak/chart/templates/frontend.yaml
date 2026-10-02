@@ -29,6 +29,9 @@ spec:
         - name: frontend
           image: {{ include "picpeak.image" .Values.image.frontend | quote }}
           imagePullPolicy: {{ .Values.image.frontend.pullPolicy }}
+          securityContext:
+            runAsUser: 0
+            runAsGroup: 0
           command: ["/bin/sh", "-c"]
           args:
             - >-
