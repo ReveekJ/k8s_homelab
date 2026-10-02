@@ -30,6 +30,7 @@ tolerations:
 
 backend:
   port: 3000
+  host: backend.picpeak.svc.cluster.local
   resources:
     requests:
       cpu: 250m
