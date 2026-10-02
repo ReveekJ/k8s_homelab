@@ -1,0 +1,96 @@
+nameOverride: nextcloud
+fullnameOverride: nextcloud
+
+image:
+  repository: nextcloud
+  tag: "31-apache"
+  pullPolicy: IfNotPresent
+
+secretName: nextcloud-secrets
+
+nodeSelector:
+  kubernetes.io/hostname: debian-hp
+
+tolerations:
+  - key: homelab.reveek.io/node-role
+    operator: Equal
+    value: application
+    effect: NoSchedule
+
+postgres:
+  image: postgres:16-alpine
+  port: 5432
+  database: nextcloud
+  user: nextcloud
+  resources:
+    requests:
+      cpu: 100m
+      memory: 128Mi
+    limits:
+      cpu: "1"
+      memory: 512Mi
+  persistence:
+    storageClass: local-path
+    size: 10Gi
+
+redis:
+  image: redis:7-alpine
+  port: 6379
+  resources:
+    requests:
+      cpu: 25m
+      memory: 32Mi
+    limits:
+      cpu: 250m
+      memory: 128Mi
+  persistence:
+    storageClass: local-path
+    size: 1Gi
+
+nextcloud:
+  port: 80
+  hostPath: /mnt/hub_drive_2/nextcloud/data
+  configHostPath: /mnt/hub_drive_2/nextcloud/config
+  externalStorageHostPath: /mnt/external_drive_1
+  externalStorageMountPath: /external_drive_1
+  resources:
+    requests:
+      cpu: 100m
+      memory: 256Mi
+    limits:
+      cpu: "1"
+      memory: 768Mi
+  trustedDomains:
+    - nextcloud.reveek-io.ru
+  overwriteCliUrl: https://nextcloud.reveek-io.ru
+
+cron:
+  enabled: true
+  schedule: "*/5 * * * *"
+  resources:
+    requests:
+      cpu: 50m
+      memory: 128Mi
+    limits:
+      cpu: "1"
+      memory: 512Mi
+
+backup:
+  enabled: true
+  schedule: "30 3 * * *"
+  hostPath: /mnt/hub_drive_2/nextcloud-backups
+  mountPath: /backup
+  retentionDays: 14
+  resources:
+    requests:
+      cpu: 50m
+      memory: 64Mi
+    limits:
+      cpu: 500m
+      memory: 256Mi
+
+ingress:
+  className: traefik
+  clusterIssuer: letsencrypt
+  host: nextcloud.reveek-io.ru
+  tlsSecretName: nextcloud-tls
