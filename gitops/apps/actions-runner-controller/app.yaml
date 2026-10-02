@@ -63,6 +63,8 @@ spec:
                   operator: Equal
                   value: application
                   effect: NoSchedule
+              containers:
+                - name: listener
     # SOPS-encrypted GitHub App credentials for the controller and listeners
     - repoURL: https://github.com/ReveekJ/k8s_homelab.git
       targetRevision: main
