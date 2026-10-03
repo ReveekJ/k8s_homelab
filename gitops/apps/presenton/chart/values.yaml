@@ -43,4 +43,5 @@ tolerations:
     effect: NoSchedule
 
 env:
+  AUTH_OVERRIDE_FROM_ENV: "true"
   MIGRATE_DATABASE_ON_STARTUP: "false"
