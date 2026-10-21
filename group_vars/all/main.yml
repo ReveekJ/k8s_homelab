@@ -14,4 +14,3 @@ k3s_worker_extra_args: "--node-label=homelab.reveek.io/node-role=application --n
 
 # Node placement for workloads with local-path persistent volumes.
 registry_pvc_size: 20Gi
-hermes_pvc_size: 20Gi

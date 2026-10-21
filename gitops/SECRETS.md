@@ -5,7 +5,6 @@ All Kubernetes secrets in this repository are encrypted with [SOPS](https://gith
 ## Encrypted files
 
 - `gitops/apps/registry/secret-registry-auth.yaml` — htpasswd for the private docker registry
-- `gitops/apps/hermes/secret-hermes.yaml` — model provider API keys for hermes
 - `gitops/apps/actions-runner-controller/secret-gha-github-app.yaml` — GitHub App credentials for actions-runner-controller
 - `gitops/apps/argocd-config/manifests/secret-sops-age-key.yaml` — the age private key itself (installed into `argocd` namespace so Argo CD can decrypt everything)
 
@@ -21,7 +20,7 @@ Bootstrap order: the `sops-age-key` secret is created by the `argocd-config` App
 
 ```sh
 export SOPS_AGE_KEY_FILE=~/.config/sops/age-homelab/k8s-homelab.txt
-sops gitops/apps/hermes/secret-hermes.yaml
+sops gitops/apps/registry/secret-registry-auth.yaml
 ```
 
 ## GitHub App for actions-runner-controller
@@ -48,5 +47,5 @@ from the app's install page), `github_app_private_key` (contents of the `.pem` f
 
 ```sh
 export SOPS_AGE_KEY_FILE=~/.config/sops/age-homelab/k8s-homelab.txt
-sops updatekeys gitops/apps/hermes/secret-hermes.yaml
+sops updatekeys gitops/apps/registry/secret-registry-auth.yaml
 ```
