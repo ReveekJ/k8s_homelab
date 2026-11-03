@@ -6,7 +6,7 @@ metadata:
     {{- include "noodle-gallery.labels" . | nindent 4 }}
     app.kubernetes.io/component: server
 spec:
-  replicas: 1
+  replicas: {{ .Values.server.replicas }}
   selector:
     matchLabels:
       app.kubernetes.io/name: noodle-gallery
