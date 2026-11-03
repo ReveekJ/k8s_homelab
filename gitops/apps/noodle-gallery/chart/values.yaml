@@ -28,7 +28,7 @@ tolerations:
     effect: NoSchedule
 
 server:
-  replicas: 0
+  replicas: 1
   port: 2283
   resources:
     requests:
