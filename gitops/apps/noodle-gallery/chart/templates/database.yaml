@@ -64,4 +64,4 @@ spec:
       volumes:
         - name: database
           persistentVolumeClaim:
-            claimName: noodle-gallery-database
+            claimName: noodle-gallery-database-usb

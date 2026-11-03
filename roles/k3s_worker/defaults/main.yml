@@ -2,3 +2,7 @@
 k3s_install_script_url: https://get.k3s.io
 k3s_server_url: "https://{{ hostvars[groups['k3s_master'][0]].ansible_host | default(groups['k3s_master'][0]) }}:{{ hostvars[groups['k3s_master'][0]].k3s_api_port | default(6443) }}"
 k3s_worker_extra_args: ""
+k3s_worker_data_disk_uuid: 410ec031-13d5-4e31-87d9-f12f887c87ab
+k3s_worker_data_disk_path: /mnt/hub_drive_2
+k3s_worker_data_disk_opts: defaults,nofail
+k3s_worker_noodle_db_path: "{{ k3s_worker_data_disk_path }}/noodle-db"

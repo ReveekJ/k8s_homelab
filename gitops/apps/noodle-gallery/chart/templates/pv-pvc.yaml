@@ -38,15 +38,40 @@ spec:
       storage: {{ .Values.persistence.library.size }}
 ---
 apiVersion: v1
+kind: PersistentVolume
+metadata:
+  name: noodle-gallery-database-usb
+  labels:
+    {{- include "noodle-gallery.labels" . | nindent 4 }}
+spec:
+  capacity:
+    storage: {{ .Values.persistence.databaseSize }}
+  accessModes:
+    - ReadWriteOnce
+  persistentVolumeReclaimPolicy: Retain
+  storageClassName: noodle-gallery-local
+  local:
+    path: {{ .Values.persistence.database.hostPath }}
+  nodeAffinity:
+    required:
+      nodeSelectorTerms:
+        - matchExpressions:
+            - key: kubernetes.io/hostname
+              operator: In
+              values:
+                - {{ index .Values.nodeSelector "kubernetes.io/hostname" }}
+---
+apiVersion: v1
 kind: PersistentVolumeClaim
 metadata:
-  name: noodle-gallery-database
+  name: noodle-gallery-database-usb
   labels:
     {{- include "noodle-gallery.labels" . | nindent 4 }}
 spec:
   accessModes:
     - ReadWriteOnce
-  storageClassName: {{ .Values.persistence.storageClass }}
+  storageClassName: noodle-gallery-local
+  volumeName: noodle-gallery-database-usb
   resources:
     requests:
       storage: {{ .Values.persistence.databaseSize }}

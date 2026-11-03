@@ -40,3 +40,27 @@
   delegate_to: "{{ groups['k3s_master'][0] }}"
   register: k3s_worker_taint
   changed_when: "'tainted' in k3s_worker_taint.stdout or 'updated' in k3s_worker_taint.stdout"
+
+- name: Configure application data disk in fstab
+  ansible.builtin.lineinfile:
+    path: /etc/fstab
+    regexp: '^UUID={{ k3s_worker_data_disk_uuid }}\s'
+    line: "UUID={{ k3s_worker_data_disk_uuid }} {{ k3s_worker_data_disk_path }} ext4 {{ k3s_worker_data_disk_opts }} 0 0"
+    state: present
+  tags: [storage]
+
+- name: Mount application data disk
+  ansible.builtin.systemd:
+    name: "{{ k3s_worker_data_disk_path | regex_replace('^/', '') | regex_replace('/', '-') }}.mount"
+    state: started
+    daemon_reload: true
+  tags: [storage]
+
+- name: Create Noodle database directory on application data disk
+  ansible.builtin.file:
+    path: "{{ k3s_worker_noodle_db_path }}"
+    state: directory
+    owner: root
+    group: root
+    mode: "0700"
+  tags: [storage]

@@ -63,8 +63,9 @@ database:
       memory: 1Gi
 
 persistence:
-  storageClass: local-path
   databaseSize: 50Gi
+  database:
+    hostPath: /mnt/hub_drive_2/noodle-db
   library:
     hostPath: /mnt/hub_drive_2/noodle
     size: 900Gi
