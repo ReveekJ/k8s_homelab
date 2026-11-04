@@ -1,0 +1,56 @@
+---
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: monitoring
+  namespace: argocd
+  finalizers:
+    - resources-finalizer.argocd.argoproj.io
+spec:
+  project: default
+  sources:
+    - repoURL: https://grafana-community.github.io/helm-charts
+      chart: loki
+      targetRevision: 20.4.1
+      helm:
+        releaseName: loki
+        valueFiles:
+          - $values/gitops/apps/monitoring/values/loki.yaml
+    - repoURL: https://grafana-community.github.io/helm-charts
+      chart: grafana
+      targetRevision: 14.3.1
+      helm:
+        releaseName: grafana
+        valueFiles:
+          - $values/gitops/apps/monitoring/values/grafana.yaml
+    - repoURL: https://prometheus-community.github.io/helm-charts
+      chart: kube-state-metrics
+      targetRevision: 8.8.0
+      helm:
+        releaseName: kube-state-metrics
+        valueFiles:
+          - $values/gitops/apps/monitoring/values/kube-state-metrics.yaml
+    - repoURL: https://prometheus-community.github.io/helm-charts
+      chart: prometheus-smartctl-exporter
+      targetRevision: 0.19.0
+      helm:
+        releaseName: smartctl-exporter
+        valueFiles:
+          - $values/gitops/apps/monitoring/values/smartctl-exporter.yaml
+    - repoURL: https://github.com/ReveekJ/k8s_homelab.git
+      targetRevision: main
+      path: gitops/apps/monitoring/manifests
+      kustomize: {}
+    - repoURL: https://github.com/ReveekJ/k8s_homelab.git
+      targetRevision: main
+      ref: values
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: monitoring
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+      - CreateNamespace=true
+      - ServerSideApply=true

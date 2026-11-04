@@ -1,0 +1,354 @@
+// Runs on both nodes. Every pipeline only handles data of its own node, so nothing
+// is collected twice.
+
+// --- Metrics delivery ---
+
+prometheus.remote_write "default" {
+	endpoint {
+		url = "http://prometheus.monitoring.svc:9090/api/v1/write"
+
+		queue_config {
+			capacity             = 2000
+			max_shards           = 2
+			max_samples_per_send = 500
+		}
+
+		metadata_config {
+			send = false
+		}
+	}
+
+	// Long enough to replay a connectivity loss between the nodes: the longest one
+	// seen so far lasted about 10.5 hours.
+	wal {
+		truncate_frequency = "30m"
+		max_keepalive_time = "12h"
+	}
+}
+
+// --- Host metrics ---
+
+prometheus.exporter.unix "node" {
+	procfs_path = "/host/proc"
+	sysfs_path  = "/host/sys"
+	rootfs_path = "/host/root"
+
+	set_collectors = [
+		"cpu",
+		"cpufreq",
+		"diskstats",
+		"filefd",
+		"filesystem",
+		"hwmon",
+		"loadavg",
+		"meminfo",
+		"netclass",
+		"netdev",
+		"powersupplyclass",
+		"pressure",
+		"sockstat",
+		"stat",
+		"thermal_zone",
+		"time",
+		"uname",
+		"vmstat",
+	]
+
+	disk {
+		device_exclude = "^(z?ram|loop|fd|sr|(h|s|v|xv)d[a-z]|nvme\\d+n\\d+p|mmcblk\\d+p|mmcblk\\d+boot)\\d+$"
+	}
+
+	filesystem {
+		fs_types_exclude     = "^(autofs|binfmt_misc|bpf|cgroup2?|configfs|debugfs|devpts|devtmpfs|efivarfs|fusectl|hugetlbfs|iso9660|mqueue|nsfs|overlay|proc|procfs|pstore|ramfs|rpc_pipefs|securityfs|selinuxfs|shm|squashfs|sysfs|tmpfs|tracefs)$"
+		mount_points_exclude = "^/(boot/efi|dev|proc|run|sys|var/lib/(containerd|docker|kubelet|rancher)/.+)($|/)"
+	}
+
+	netclass {
+		ignored_devices = "^(lo|veth.*|cni.*|flannel.*|docker.*|br-.*|virbr.*|vnet.*)$"
+	}
+
+	netdev {
+		device_exclude = "^(lo|veth.*|cni.*|flannel.*|docker.*|br-.*|virbr.*|vnet.*)$"
+	}
+}
+
+prometheus.scrape "node" {
+	targets         = prometheus.exporter.unix.node.targets
+	job_name        = "node-exporter"
+	scrape_interval = "30s"
+	sample_limit    = 3000
+	forward_to      = [prometheus.relabel.node.receiver]
+}
+
+prometheus.relabel "node" {
+	forward_to = [prometheus.remote_write.default.receiver]
+
+	rule {
+		source_labels = ["__name__"]
+		regex         = "node_scrape_collector_.*"
+		action        = "drop"
+	}
+
+	rule {
+		target_label = "instance"
+		replacement  = sys.env("NODE_NAME")
+	}
+
+	rule {
+		target_label = "node"
+		replacement  = sys.env("NODE_NAME")
+	}
+}
+
+// --- Per-container resource usage from the local kubelet ---
+
+prometheus.scrape "cadvisor" {
+	targets = [{
+		"__address__" = sys.env("NODE_IP") + ":10250",
+		"instance"    = sys.env("NODE_NAME"),
+		"node"        = sys.env("NODE_NAME"),
+	}]
+	job_name          = "cadvisor"
+	scheme            = "https"
+	metrics_path      = "/metrics/cadvisor"
+	scrape_interval   = "60s"
+	sample_limit      = 20000
+	bearer_token_file = "/var/run/secrets/kubernetes.io/serviceaccount/token"
+	forward_to        = [prometheus.relabel.cadvisor.receiver]
+
+	tls_config {
+		insecure_skip_verify = true
+	}
+}
+
+prometheus.relabel "cadvisor" {
+	forward_to = [prometheus.remote_write.default.receiver]
+
+	rule {
+		source_labels = ["__name__"]
+		regex         = "up|container_cpu_usage_seconds_total|container_memory_working_set_bytes|container_oom_events_total|container_spec_memory_limit_bytes"
+		action        = "keep"
+	}
+
+	// Drops pod-level aggregates and pause containers, keeping the up series.
+	rule {
+		source_labels = ["__name__", "container"]
+		regex         = "container_.+;(POD)?"
+		action        = "drop"
+	}
+
+	rule {
+		regex  = "id|image|name"
+		action = "labeldrop"
+	}
+}
+
+// --- Pods of this node ---
+
+discovery.kubernetes "pods" {
+	role = "pod"
+
+	selectors {
+		role  = "pod"
+		field = "spec.nodeName=" + sys.env("NODE_NAME")
+	}
+}
+
+// --- Exporters and the stack itself, wherever they run ---
+
+discovery.relabel "exporters" {
+	targets = discovery.kubernetes.pods.targets
+
+	rule {
+		source_labels = ["__meta_kubernetes_namespace", "__meta_kubernetes_pod_label_app_kubernetes_io_name", "__meta_kubernetes_pod_container_port_name"]
+		regex         = "monitoring;(kube-state-metrics|prometheus-smartctl-exporter);http"
+		action        = "keep"
+	}
+
+	rule {
+		source_labels = ["__meta_kubernetes_pod_label_app_kubernetes_io_name"]
+		target_label  = "job"
+	}
+
+	rule {
+		source_labels = ["__meta_kubernetes_pod_node_name"]
+		target_label  = "node"
+	}
+}
+
+prometheus.scrape "exporters" {
+	targets         = discovery.relabel.exporters.output
+	honor_labels    = true
+	scrape_interval = "60s"
+	sample_limit    = 5000
+	forward_to      = [prometheus.remote_write.default.receiver]
+}
+
+discovery.relabel "stack" {
+	targets = discovery.kubernetes.pods.targets
+
+	rule {
+		source_labels = ["__meta_kubernetes_namespace", "__meta_kubernetes_pod_label_app_kubernetes_io_name", "__meta_kubernetes_pod_container_port_name"]
+		regex         = "monitoring;(loki;http-metrics|grafana;grafana|prometheus;http)"
+		action        = "keep"
+	}
+
+	rule {
+		source_labels = ["__meta_kubernetes_pod_label_app_kubernetes_io_name"]
+		target_label  = "job"
+	}
+
+	rule {
+		source_labels = ["__meta_kubernetes_pod_node_name"]
+		target_label  = "node"
+	}
+}
+
+prometheus.scrape "stack" {
+	targets         = discovery.relabel.stack.output
+	scrape_interval = "60s"
+	sample_limit    = 20000
+	forward_to      = [prometheus.relabel.stack.receiver]
+}
+
+prometheus.exporter.self "alloy" { }
+
+discovery.relabel "alloy" {
+	targets = prometheus.exporter.self.alloy.targets
+
+	rule {
+		target_label = "job"
+		replacement  = "alloy"
+	}
+
+	rule {
+		target_label = "node"
+		replacement  = sys.env("NODE_NAME")
+	}
+}
+
+prometheus.scrape "alloy" {
+	targets         = discovery.relabel.alloy.output
+	scrape_interval = "60s"
+	sample_limit    = 20000
+	forward_to      = [prometheus.relabel.stack.receiver]
+}
+
+// These components expose thousands of series, only their health is needed.
+prometheus.relabel "stack" {
+	forward_to = [prometheus.remote_write.default.receiver]
+
+	rule {
+		source_labels = ["__name__"]
+		regex         = "up|process_cpu_seconds_total|process_resident_memory_bytes|go_memstats_heap_inuse_bytes|prometheus_tsdb_head_series|prometheus_tsdb_storage_blocks_bytes|loki_ingester_memory_streams|loki_distributor_bytes_received_total|loki_discarded_samples_total"
+		action        = "keep"
+	}
+}
+
+// --- Log delivery ---
+
+loki.write "default" {
+	endpoint {
+		url                = "http://loki.monitoring.svc:3100/loki/api/v1/push"
+		batch_wait         = "5s"
+		batch_size         = "512KiB"
+		min_backoff_period = "1s"
+		max_backoff_period = "5m"
+		// About 10.5 hours at the maximum backoff, matching the longest outage so far.
+		max_backoff_retries = 130
+	}
+}
+
+// --- Pod logs ---
+
+discovery.relabel "pod_logs" {
+	targets = discovery.kubernetes.pods.targets
+
+	rule {
+		source_labels = ["__meta_kubernetes_pod_phase"]
+		regex         = "Pending|Succeeded|Failed"
+		action        = "drop"
+	}
+
+	rule {
+		source_labels = ["__meta_kubernetes_namespace"]
+		target_label  = "namespace"
+	}
+
+	rule {
+		source_labels = ["__meta_kubernetes_pod_name"]
+		target_label  = "pod"
+	}
+
+	rule {
+		source_labels = ["__meta_kubernetes_pod_container_name"]
+		target_label  = "container"
+	}
+
+	rule {
+		source_labels = ["__meta_kubernetes_pod_node_name"]
+		target_label  = "node"
+	}
+
+	rule {
+		target_label = "job"
+		replacement  = "kubernetes-pods"
+	}
+
+	rule {
+		source_labels = ["__meta_kubernetes_pod_uid", "__meta_kubernetes_pod_container_name"]
+		separator     = "/"
+		target_label  = "__path__"
+		replacement   = "/var/log/pods/*$1/*.log"
+	}
+}
+
+local.file_match "pod_logs" {
+	path_targets = discovery.relabel.pod_logs.output
+}
+
+loki.source.file "pod_logs" {
+	targets = local.file_match.pod_logs.targets
+	// Skips the existing log history on the very first start.
+	tail_from_end = true
+	forward_to    = [loki.process.pod_logs.receiver]
+}
+
+loki.process "pod_logs" {
+	forward_to = [loki.write.default.receiver]
+
+	stage.cri { }
+}
+
+// --- Host journal ---
+
+loki.relabel "journal" {
+	forward_to = []
+
+	rule {
+		source_labels = ["__journal__systemd_unit"]
+		target_label  = "unit"
+	}
+
+	rule {
+		source_labels = ["__journal_priority_keyword"]
+		target_label  = "level"
+	}
+
+	// Lets logger(1) tags such as homelab-connectivity be selected directly.
+	rule {
+		source_labels = ["__journal_syslog_identifier"]
+		target_label  = "identifier"
+	}
+}
+
+loki.source.journal "system" {
+	path          = "/var/log/journal"
+	max_age       = "12h"
+	relabel_rules = loki.relabel.journal.rules
+	labels        = {
+		job  = "systemd-journal",
+		node = sys.env("NODE_NAME"),
+	}
+	forward_to = [loki.write.default.receiver]
+}

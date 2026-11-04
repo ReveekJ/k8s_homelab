@@ -44,6 +44,12 @@ nodeSelector:
 
 Do not add the application toleration to system workloads. Components managed by k3s or an upstream chart must be configured at their owning layer: k3s `HelmChartConfig` for bundled charts such as Traefik, Helm values for cert-manager, and Ansible bootstrap patches for Argo CD.
 
+## Monitoring exception
+
+The monitoring stack is an explicit exception to the system workload rule. Prometheus, Loki, Grafana, kube-state-metrics, and smartctl-exporter use the application placement rule and run on `debian-hp`: the master has too little free memory, and its small eMMC root cannot host a TSDB or log store.
+
+Alloy runs on both nodes because it collects host metrics and logs, so it carries the application toleration and has no `nodeSelector`. All monitoring Pods use the `monitoring-low` PriorityClass, which never preempts applications and makes monitoring an early eviction candidate under memory pressure.
+
 ## Verification
 
 After a change, inspect both scheduling metadata and actual placement:

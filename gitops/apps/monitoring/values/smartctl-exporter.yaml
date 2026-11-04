@@ -1,0 +1,21 @@
+# Placement decision: only the worker has SMART-capable disks. The master's eMMC
+# does not expose SMART data, so no pod runs there.
+fullnameOverride: smartctl-exporter
+
+nodeSelector:
+  kubernetes.io/hostname: debian-hp
+# Replaces the chart default, which tolerates every NoSchedule taint.
+tolerations:
+  - key: homelab.reveek.io/node-role
+    operator: Equal
+    value: application
+    effect: NoSchedule
+priorityClassName: monitoring-low
+
+resources:
+  requests:
+    cpu: 10m
+    memory: 16Mi
+  limits:
+    cpu: 100m
+    memory: 48Mi

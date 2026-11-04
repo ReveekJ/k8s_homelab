@@ -1,0 +1,119 @@
+# A plain manifest rather than the prometheus chart: the chart always renders its
+# default scrape jobs, while here Alloy scrapes everything and pushes via remote write.
+# Placement decision: runs on the worker, the master's eMMC cannot host a TSDB.
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: prometheus
+data:
+  prometheus.yml: |
+    global:
+      evaluation_interval: 1m
+    storage:
+      tsdb:
+        # Lets Alloy deliver its WAL after a long loss of connectivity between nodes.
+        out_of_order_time_window: 12h
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: prometheus
+  labels:
+    app.kubernetes.io/name: prometheus
+spec:
+  selector:
+    app.kubernetes.io/name: prometheus
+  ports:
+    - name: http
+      port: 9090
+      targetPort: http
+---
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: prometheus
+  labels:
+    app.kubernetes.io/name: prometheus
+spec:
+  serviceName: prometheus
+  replicas: 1
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: prometheus
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: prometheus
+    spec:
+      automountServiceAccountToken: false
+      priorityClassName: monitoring-low
+      nodeSelector:
+        kubernetes.io/hostname: debian-hp
+      tolerations:
+        - key: homelab.reveek.io/node-role
+          operator: Equal
+          value: application
+          effect: NoSchedule
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 65534
+        runAsGroup: 65534
+        fsGroup: 65534
+      containers:
+        - name: prometheus
+          image: quay.io/prometheus/prometheus:v3.15.1
+          args:
+            - --config.file=/etc/prometheus/prometheus.yml
+            - --storage.tsdb.path=/prometheus
+            - --storage.tsdb.retention.time=30d
+            - --storage.tsdb.retention.size=5GB
+            - --web.enable-remote-write-receiver
+            - --auto-gomemlimit.ratio=0.85
+            - --query.max-concurrency=4
+            - --query.max-samples=5000000
+          ports:
+            - name: http
+              containerPort: 9090
+          startupProbe:
+            httpGet:
+              path: /-/ready
+              port: http
+            periodSeconds: 10
+            failureThreshold: 60
+          readinessProbe:
+            httpGet:
+              path: /-/ready
+              port: http
+            periodSeconds: 15
+          livenessProbe:
+            httpGet:
+              path: /-/healthy
+              port: http
+            periodSeconds: 30
+            failureThreshold: 5
+          resources:
+            requests:
+              cpu: 50m
+              memory: 150Mi
+            limits:
+              cpu: "1"
+              memory: 450Mi
+          volumeMounts:
+            - name: config
+              mountPath: /etc/prometheus
+            - name: data
+              mountPath: /prometheus
+      volumes:
+        - name: config
+          configMap:
+            name: prometheus
+  volumeClaimTemplates:
+    - metadata:
+        name: data
+      spec:
+        storageClassName: local-path
+        accessModes:
+          - ReadWriteOnce
+        resources:
+          requests:
+            storage: 10Gi

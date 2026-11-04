@@ -1,0 +1,86 @@
+# Placement decision: the stack runs on the worker. The master has about 1 GiB
+# free memory and a 29 GB eMMC root, which cannot host a TSDB or log store.
+deploymentMode: Monolithic
+
+loki:
+  auth_enabled: false
+  commonConfig:
+    replication_factor: 1
+  storage:
+    type: filesystem
+  schemaConfig:
+    configs:
+      - from: "2024-01-01"
+        store: tsdb
+        object_store: filesystem
+        schema: v13
+        index:
+          prefix: index_
+          period: 24h
+  limits_config:
+    retention_period: 336h
+    volume_enabled: true
+    ingestion_rate_mb: 4
+    ingestion_burst_size_mb: 8
+    max_global_streams_per_user: 1000
+    max_query_parallelism: 4
+    max_query_series: 500
+  compactor:
+    retention_enabled: true
+    delete_request_store: filesystem
+  querier:
+    max_concurrent: 2
+  ingester:
+    chunk_idle_period: 30m
+    max_chunk_age: 2h
+    wal:
+      flush_on_shutdown: true
+      # The default ceiling of 4 GB would exceed the container limit on replay.
+      replay_memory_ceiling: 256MB
+
+singleBinary:
+  replicas: 1
+  priorityClassName: monitoring-low
+  extraEnv:
+    - name: GOMEMLIMIT
+      value: 326MiB
+  resources:
+    requests:
+      cpu: 50m
+      memory: 128Mi
+    limits:
+      cpu: "1"
+      memory: 384Mi
+  nodeSelector:
+    kubernetes.io/hostname: debian-hp
+  tolerations:
+    - key: homelab.reveek.io/node-role
+      operator: Equal
+      value: application
+      effect: NoSchedule
+  persistence:
+    enabled: true
+    size: 10Gi
+    storageClass: local-path
+
+read:
+  replicas: 0
+write:
+  replicas: 0
+backend:
+  replicas: 0
+gateway:
+  enabled: false
+chunksCache:
+  enabled: false
+resultsCache:
+  enabled: false
+memcached:
+  enabled: false
+lokiCanary:
+  enabled: false
+test:
+  enabled: false
+sidecar:
+  rules:
+    enabled: false

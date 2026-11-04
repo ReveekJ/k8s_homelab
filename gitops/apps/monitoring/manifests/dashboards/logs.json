@@ -1,0 +1,300 @@
+{
+ "uid": "homelab-logs",
+ "title": "Homelab: логи",
+ "tags": [
+  "homelab",
+  "logs"
+ ],
+ "schemaVersion": 39,
+ "version": 1,
+ "editable": false,
+ "graphTooltip": 1,
+ "time": {
+  "from": "now-6h",
+  "to": "now"
+ },
+ "refresh": "30s",
+ "timezone": "browser",
+ "templating": {
+  "list": [
+   {
+    "name": "node",
+    "label": "Нода",
+    "type": "query",
+    "datasource": {
+     "type": "loki",
+     "uid": "loki"
+    },
+    "query": {
+     "label": "node",
+     "stream": "{node=~\".+\"}",
+     "type": 1
+    },
+    "refresh": 2,
+    "includeAll": true,
+    "multi": true,
+    "allValue": ".*",
+    "current": {
+     "text": "All",
+     "value": "$__all"
+    },
+    "sort": 1
+   },
+   {
+    "name": "namespace",
+    "label": "Namespace",
+    "type": "query",
+    "datasource": {
+     "type": "loki",
+     "uid": "loki"
+    },
+    "query": {
+     "label": "namespace",
+     "stream": "{job=\"kubernetes-pods\",node=~\"$node\"}",
+     "type": 1
+    },
+    "refresh": 2,
+    "includeAll": true,
+    "multi": true,
+    "allValue": ".*",
+    "current": {
+     "text": "All",
+     "value": "$__all"
+    },
+    "sort": 1
+   },
+   {
+    "name": "pod",
+    "label": "Под",
+    "type": "query",
+    "datasource": {
+     "type": "loki",
+     "uid": "loki"
+    },
+    "query": {
+     "label": "pod",
+     "stream": "{job=\"kubernetes-pods\",node=~\"$node\",namespace=~\"$namespace\"}",
+     "type": 1
+    },
+    "refresh": 2,
+    "includeAll": true,
+    "multi": true,
+    "allValue": ".*",
+    "current": {
+     "text": "All",
+     "value": "$__all"
+    },
+    "sort": 1
+   },
+   {
+    "name": "unit",
+    "label": "Unit",
+    "type": "query",
+    "datasource": {
+     "type": "loki",
+     "uid": "loki"
+    },
+    "query": {
+     "label": "unit",
+     "stream": "{job=\"systemd-journal\",node=~\"$node\"}",
+     "type": 1
+    },
+    "refresh": 2,
+    "includeAll": true,
+    "multi": true,
+    "allValue": ".*",
+    "current": {
+     "text": "All",
+     "value": "$__all"
+    },
+    "sort": 1
+   },
+   {
+    "name": "search",
+    "label": "Поиск",
+    "type": "textbox",
+    "query": "",
+    "current": {
+     "text": "",
+     "value": ""
+    }
+   }
+  ]
+ },
+ "panels": [
+  {
+   "id": 1,
+   "type": "timeseries",
+   "title": "Объём логов подов",
+   "datasource": {
+    "type": "loki",
+    "uid": "loki"
+   },
+   "gridPos": {
+    "h": 5,
+    "w": 24,
+    "x": 0,
+    "y": 0
+   },
+   "targets": [
+    {
+     "expr": "sum by (namespace) (count_over_time({job=\"kubernetes-pods\",node=~\"$node\",namespace=~\"$namespace\",pod=~\"$pod\"} |~ \"(?i)$search\" [$__auto]))",
+     "legendFormat": "{{namespace}}",
+     "queryType": "range",
+     "refId": "A",
+     "datasource": {
+      "type": "loki",
+      "uid": "loki"
+     }
+    }
+   ],
+   "fieldConfig": {
+    "defaults": {
+     "custom": {
+      "fillOpacity": 70,
+      "showPoints": "never",
+      "lineWidth": 1,
+      "drawStyle": "bars",
+      "stacking": {
+       "mode": "normal"
+      }
+     }
+    },
+    "overrides": []
+   },
+   "options": {
+    "legend": {
+     "displayMode": "list",
+     "placement": "right"
+    }
+   }
+  },
+  {
+   "id": 2,
+   "type": "logs",
+   "title": "Логи подов",
+   "datasource": {
+    "type": "loki",
+    "uid": "loki"
+   },
+   "gridPos": {
+    "h": 18,
+    "w": 24,
+    "x": 0,
+    "y": 5
+   },
+   "targets": [
+    {
+     "expr": "{job=\"kubernetes-pods\",node=~\"$node\",namespace=~\"$namespace\",pod=~\"$pod\"} |~ \"(?i)$search\"",
+     "legendFormat": "",
+     "queryType": "range",
+     "maxLines": 1000,
+     "refId": "A",
+     "datasource": {
+      "type": "loki",
+      "uid": "loki"
+     }
+    }
+   ],
+   "fieldConfig": {
+    "defaults": {
+     "custom": {}
+    },
+    "overrides": []
+   },
+   "options": {
+    "showTime": true,
+    "wrapLogMessage": true,
+    "enableLogDetails": true,
+    "sortOrder": "Descending",
+    "dedupStrategy": "none"
+   }
+  },
+  {
+   "id": 3,
+   "type": "logs",
+   "title": "Журнал нод (journald)",
+   "datasource": {
+    "type": "loki",
+    "uid": "loki"
+   },
+   "gridPos": {
+    "h": 12,
+    "w": 24,
+    "x": 0,
+    "y": 23
+   },
+   "targets": [
+    {
+     "expr": "{job=\"systemd-journal\",node=~\"$node\",unit=~\"$unit\"} |~ \"(?i)$search\"",
+     "legendFormat": "",
+     "queryType": "range",
+     "maxLines": 500,
+     "refId": "A",
+     "datasource": {
+      "type": "loki",
+      "uid": "loki"
+     }
+    }
+   ],
+   "fieldConfig": {
+    "defaults": {
+     "custom": {}
+    },
+    "overrides": []
+   },
+   "options": {
+    "showTime": true,
+    "wrapLogMessage": true,
+    "enableLogDetails": true,
+    "sortOrder": "Descending",
+    "dedupStrategy": "none"
+   }
+  },
+  {
+   "id": 4,
+   "type": "logs",
+   "title": "Связность нод (homelab-connectivity)",
+   "datasource": {
+    "type": "loki",
+    "uid": "loki"
+   },
+   "gridPos": {
+    "h": 8,
+    "w": 24,
+    "x": 0,
+    "y": 35
+   },
+   "targets": [
+    {
+     "expr": "{job=\"systemd-journal\",identifier=\"homelab-connectivity\",node=~\"$node\"} |= \"fail\"",
+     "legendFormat": "",
+     "queryType": "range",
+     "maxLines": 200,
+     "refId": "A",
+     "datasource": {
+      "type": "loki",
+      "uid": "loki"
+     }
+    }
+   ],
+   "fieldConfig": {
+    "defaults": {
+     "custom": {}
+    },
+    "overrides": []
+   },
+   "options": {
+    "showTime": true,
+    "wrapLogMessage": true,
+    "enableLogDetails": true,
+    "sortOrder": "Descending",
+    "dedupStrategy": "none"
+   },
+   "description": "Только проверки с ошибками: gateway, сосед или API недоступны."
+  }
+ ],
+ "annotations": {
+  "list": []
+ }
+}

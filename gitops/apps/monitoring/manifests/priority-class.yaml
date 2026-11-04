@@ -1,0 +1,12 @@
+# Monitoring must never displace applications: it does not preempt anything and
+# the kubelet evicts it ahead of them once it exceeds its memory request.
+apiVersion: scheduling.k8s.io/v1
+kind: PriorityClass
+metadata:
+  name: monitoring-low
+  annotations:
+    argocd.argoproj.io/sync-wave: "-1"
+value: -10
+preemptionPolicy: Never
+globalDefault: false
+description: Monitoring stack, evicted before application workloads.

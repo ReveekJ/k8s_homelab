@@ -4,10 +4,25 @@ kind: Kustomization
 namespace: monitoring
 
 resources:
+  - priority-class.yaml
+  - prometheus.yaml
   - alloy-rbac.yaml
-  - alloy-config.yaml
   - alloy-daemonset.yaml
   - grafana-ingress.yaml
 
 generators:
   - grafana-admin-generator.yaml
+
+configMapGenerator:
+  # The content hash in the name restarts Alloy whenever its config changes.
+  - name: alloy
+    files:
+      - config.alloy=alloy/config.alloy
+  # Grafana reads dashboards from this exact name and reloads them on change.
+  - name: grafana-dashboards
+    options:
+      disableNameSuffixHash: true
+    files:
+      - dashboards/homelab-overview.json
+      - dashboards/logs.json
+      - dashboards/node-exporter-full.json
