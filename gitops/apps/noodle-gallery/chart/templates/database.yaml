@@ -54,11 +54,13 @@ spec:
               command: ["pg_isready", "-U", "{{ .Values.database.user }}", "-d", "{{ .Values.database.name }}"]
             initialDelaySeconds: 10
             periodSeconds: 10
+            timeoutSeconds: {{ .Values.database.probeTimeoutSeconds }}
           livenessProbe:
             exec:
               command: ["pg_isready", "-U", "{{ .Values.database.user }}", "-d", "{{ .Values.database.name }}"]
             initialDelaySeconds: 30
             periodSeconds: 30
+            timeoutSeconds: {{ .Values.database.probeTimeoutSeconds }}
           securityContext:
             allowPrivilegeEscalation: false
       volumes:

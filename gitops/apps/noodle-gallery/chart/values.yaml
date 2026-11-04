@@ -55,6 +55,7 @@ database:
   port: 5432
   name: immich
   user: postgres
+  probeTimeoutSeconds: 5
   resources:
     requests:
       cpu: 100m
