@@ -4,8 +4,20 @@ deploymentMode: Monolithic
 
 loki:
   auth_enabled: false
+  # The binary is paged in from a busy HDD, so the first start can take many minutes.
+  startupProbe:
+    httpGet:
+      path: /ready
+      port: http-metrics
+    periodSeconds: 10
+    failureThreshold: 90
   commonConfig:
     replication_factor: 1
+    # A single replica has no peers to gossip with. Memberlist only adds timeouts
+    # that abort the startup when the node is short on CPU or disk.
+    ring:
+      kvstore:
+        store: inmemory
   storage:
     type: filesystem
   schemaConfig:

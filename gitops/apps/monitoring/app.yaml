@@ -54,3 +54,11 @@ spec:
     syncOptions:
       - CreateNamespace=true
       - ServerSideApply=true
+      - RespectIgnoreDifferences=true
+  # volumeClaimTemplates are immutable and the API server adds defaults to them,
+  # which keeps StatefulSets OutOfSync under server-side apply.
+  ignoreDifferences:
+    - group: apps
+      kind: StatefulSet
+      jsonPointers:
+        - /spec/volumeClaimTemplates

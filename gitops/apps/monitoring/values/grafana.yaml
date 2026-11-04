@@ -14,6 +14,20 @@ admin:
   userKey: admin-user
   passwordKey: admin-password
 
+# The binary is paged in from a busy HDD, so the first start can take many minutes.
+startupProbe:
+  httpGet:
+    path: /api/health
+    port: grafana
+  periodSeconds: 10
+  failureThreshold: 90
+livenessProbe:
+  httpGet:
+    path: /api/health
+    port: grafana
+  timeoutSeconds: 30
+  failureThreshold: 10
+
 testFramework:
   enabled: false
 initChownData:
