@@ -31,14 +31,15 @@ spec:
             - name: cron
               image: {{ printf "%s:%s" .Values.image.repository .Values.image.tag | quote }}
               imagePullPolicy: {{ .Values.image.pullPolicy }}
-              args:
-                - /bin/sh
-                - -c
-                - exec su -s /bin/sh www-data -c 'php -f /var/www/html/cron.php'
+              # Bypasses the entrypoint: the code is already on the nextcloud-code volume.
+              command:
+                - php
+                - -f
+                - /var/www/html/cron.php
+              securityContext:
+                runAsUser: 33
+                runAsGroup: 33
               env:
-                # Makes the image entrypoint populate /var/www/html before cron.php runs.
-                - name: NEXTCLOUD_UPDATE
-                  value: "1"
                 - name: POSTGRES_HOST
                   value: nextcloud-postgres
                 - name: POSTGRES_DB
@@ -58,6 +59,8 @@ spec:
                       name: {{ .Values.secretName }}
                       key: REDIS_PASSWORD
               volumeMounts:
+                - name: nextcloud-code
+                  mountPath: /var/www/html
                 - name: nextcloud-config
                   mountPath: /var/www/html/config
                 - name: k8s-config
@@ -71,6 +74,9 @@ spec:
               resources:
                 {{- toYaml .Values.cron.resources | nindent 16 }}
           volumes:
+            - name: nextcloud-code
+              persistentVolumeClaim:
+                claimName: nextcloud-code
             - name: nextcloud-config
               hostPath:
                 path: {{ .Values.nextcloud.configHostPath }}

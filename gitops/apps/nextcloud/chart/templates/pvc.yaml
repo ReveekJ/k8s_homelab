@@ -23,3 +23,16 @@ spec:
   resources:
     requests:
       storage: {{ .Values.redis.persistence.size }}
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: nextcloud-code
+  labels:
+    {{- include "nextcloud.labels" . | nindent 4 }}
+spec:
+  accessModes: [ReadWriteOnce]
+  storageClassName: {{ .Values.nextcloud.codePersistence.storageClass }}
+  resources:
+    requests:
+      storage: {{ .Values.nextcloud.codePersistence.size }}

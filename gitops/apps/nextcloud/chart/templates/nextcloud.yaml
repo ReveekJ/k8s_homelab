@@ -7,6 +7,8 @@ metadata:
     app.kubernetes.io/component: web
 spec:
   replicas: 1
+  strategy:
+    type: Recreate
   selector:
     matchLabels:
       app.kubernetes.io/name: nextcloud
@@ -54,6 +56,8 @@ spec:
             - name: http
               containerPort: {{ .Values.nextcloud.port }}
           volumeMounts:
+            - name: nextcloud-code
+              mountPath: /var/www/html
             - name: nextcloud-config
               mountPath: /var/www/html/config
             - name: k8s-config
@@ -74,7 +78,8 @@ spec:
                 - name: Host
                   value: {{ .Values.ingress.host }}
             timeoutSeconds: 5
-            failureThreshold: 30
+            # The first start or an image upgrade copies 2.5 GiB of code.
+            failureThreshold: 120
             periodSeconds: 10
           readinessProbe:
             httpGet:
@@ -96,6 +101,9 @@ spec:
             initialDelaySeconds: 30
             periodSeconds: 30
       volumes:
+        - name: nextcloud-code
+          persistentVolumeClaim:
+            claimName: nextcloud-code
         - name: nextcloud-config
           hostPath:
             path: {{ .Values.nextcloud.configHostPath }}

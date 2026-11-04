@@ -53,6 +53,10 @@ nextcloud:
   dataMountPath: /mnt/ncdata
   configHostPath: /mnt/hub_drive_2/nextcloud/config
   customAppsHostPath: /mnt/hub_drive_2/nextcloud/custom_apps
+  # Keeps the code unpacked by the image entrypoint, so restarts and cron skip that copy.
+  codePersistence:
+    storageClass: local-path
+    size: 5Gi
   resources:
     requests:
       cpu: 100m
