@@ -46,6 +46,21 @@
     name: "{{ k3s_common_packages }}"
     state: present
 
+- name: Install time synchronization service
+  ansible.builtin.apt:
+    name: systemd-timesyncd
+    state: present
+    update_cache: true
+    cache_valid_time: 3600
+  tags: [ntp]
+
+- name: Enable time synchronization service
+  ansible.builtin.systemd_service:
+    name: systemd-timesyncd
+    enabled: true
+    state: started
+  tags: [ntp]
+
 - name: Ensure systemd logind configuration directory exists
   ansible.builtin.file:
     path: /etc/systemd/logind.conf.d
