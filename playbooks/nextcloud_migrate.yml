@@ -1,0 +1,251 @@
+---
+# One-time migration of Nextcloud AIO data into the Kubernetes deployment.
+#
+# Order:
+#   --tags copy      copies files to the data disk, safe to repeat until cutover
+#   (push the chart, wait for nextcloud-postgres to run PostgreSQL 18)
+#   --tags restore   loads the final AIO dump into the empty database
+#   --tags cutover   removes stuck Jobs, creates the backup directory, locks the migration
+#
+# nextcloud-backups must not exist before cutover: the stuck Job from the old chart
+# would otherwise start and archive all data. AIO containers, volumes and /mnt/ncdata
+# are only read here.
+
+- name: Check migration preconditions
+  hosts: k3s_worker
+  become: true
+  gather_facts: false
+  tags: [copy, restore, cutover]
+  vars:
+    nextcloud_migrate_root: /mnt/hub_drive_2/nextcloud
+  tasks:
+    - name: Check that the data disk is mounted
+      ansible.builtin.command: findmnt -n /mnt/hub_drive_2
+      changed_when: false
+
+    - name: Read cutover marker
+      ansible.builtin.stat:
+        path: "{{ nextcloud_migrate_root }}/.migration-cutover"
+      register: nextcloud_migrate_marker
+
+    - name: Refuse to run after cutover
+      ansible.builtin.assert:
+        that: not nextcloud_migrate_marker.stat.exists
+        fail_msg: Migration already finished; rerunning would overwrite live data.
+
+- name: Copy Nextcloud files to the data disk
+  hosts: k3s_worker
+  become: true
+  gather_facts: false
+  tags: [copy]
+  vars:
+    nextcloud_migrate_root: /mnt/hub_drive_2/nextcloud
+    nextcloud_migrate_aio_volume: /var/lib/docker/volumes/nextcloud_aio_nextcloud/_data
+    nextcloud_migrate_free_margin_bytes: 53687091200
+  tasks:
+    - name: Create application directories
+      ansible.builtin.file:
+        path: "{{ item }}"
+        state: directory
+        owner: "33"
+        group: "33"
+        mode: "0750"
+      loop:
+        - "{{ nextcloud_migrate_root }}/data"
+        - "{{ nextcloud_migrate_root }}/config"
+        - "{{ nextcloud_migrate_root }}/custom_apps"
+
+    - name: Measure data still to copy
+      ansible.builtin.command: >-
+        rsync -aHn --numeric-ids --stats /mnt/ncdata/ {{ nextcloud_migrate_root }}/data/
+      async: 3600
+      poll: 20
+      register: nextcloud_migrate_dry_run
+      changed_when: false
+
+    - name: Read free space on the data disk
+      ansible.builtin.command: findmnt -bno AVAIL /mnt/hub_drive_2
+      register: nextcloud_migrate_avail
+      changed_when: false
+
+    - name: Check free space
+      ansible.builtin.assert:
+        that: >-
+          (nextcloud_migrate_avail.stdout | trim | int)
+          > nextcloud_migrate_to_copy | int + nextcloud_migrate_free_margin_bytes
+        fail_msg: "Need {{ nextcloud_migrate_to_copy }} bytes plus margin, have {{ nextcloud_migrate_avail.stdout | trim }}"
+      vars:
+        nextcloud_migrate_to_copy: >-
+          {{ nextcloud_migrate_dry_run.stdout
+             | regex_search('Total transferred file size: ([0-9,]+)', '\1') | first | replace(',', '') }}
+
+    - name: Check whether data copy is running
+      ansible.builtin.command: systemctl is-active nextcloud-migrate-rsync
+      register: nextcloud_migrate_rsync_state
+      changed_when: false
+      failed_when: false
+
+    - name: Start data copy in the background
+      ansible.builtin.command: >-
+        systemd-run --unit=nextcloud-migrate-rsync --collect --nice=10
+        --property=IOSchedulingClass=idle
+        /usr/bin/rsync -aH --numeric-ids --stats /mnt/ncdata/ {{ nextcloud_migrate_root }}/data/
+      when: nextcloud_migrate_rsync_state.stdout != 'active'
+
+    - name: Copy custom apps
+      ansible.builtin.command: >-
+        rsync -aH --numeric-ids --itemize-changes
+        {{ nextcloud_migrate_aio_volume }}/custom_apps/ {{ nextcloud_migrate_root }}/custom_apps/
+      async: 3600
+      poll: 20
+      register: nextcloud_migrate_apps
+      changed_when: nextcloud_migrate_apps.stdout | length > 0
+
+    - name: Copy config.php without AIO-specific overrides
+      ansible.builtin.command:
+        cmd: >-
+          rsync -a --numeric-ids
+          {{ nextcloud_migrate_aio_volume }}/config/config.php {{ nextcloud_migrate_root }}/config/config.php
+        creates: "{{ nextcloud_migrate_root }}/config/config.php"
+
+    - name: Keep the instance in maintenance mode until cutover
+      ansible.builtin.replace:
+        path: "{{ nextcloud_migrate_root }}/config/config.php"
+        regexp: "'maintenance' => false"
+        replace: "'maintenance' => true"
+
+- name: Prepare database dump
+  hosts: k3s_worker
+  become: true
+  gather_facts: false
+  tags: [restore]
+  vars:
+    nextcloud_migrate_dump: /var/lib/docker/volumes/nextcloud_aio_database_dump/_data/database-dump.sql
+  tasks:
+    - name: Find the database volume
+      ansible.builtin.find:
+        paths: /var/lib/rancher/k3s/storage
+        patterns: "*_nextcloud_nextcloud-postgres"
+        file_type: directory
+      register: nextcloud_migrate_pvc
+      failed_when: nextcloud_migrate_pvc.matched != 1
+
+    - name: Create restore directory in the database volume
+      ansible.builtin.file:
+        path: "{{ nextcloud_migrate_pvc.files[0].path }}/restore"
+        state: directory
+        mode: "0755"
+
+    - name: Write dump without AIO role references
+      ansible.builtin.shell: >-
+        sed -E '/^ALTER .* OWNER TO oc_nextcloud;$/d; /^GRANT ALL ON SCHEMA public TO oc_nextcloud;$/d'
+        {{ nextcloud_migrate_dump }} > {{ nextcloud_migrate_pvc.files[0].path }}/restore/nextcloud.sql
+      changed_when: true
+
+- name: Restore database
+  hosts: k3s_master
+  become: true
+  gather_facts: false
+  tags: [restore]
+  vars:
+    nextcloud_migrate_exec: [kubectl, exec, -n, nextcloud, nextcloud-postgres-0, --, sh, -c]
+    nextcloud_migrate_psql: 'psql -v ON_ERROR_STOP=1 -U "$POSTGRES_USER" -d "$POSTGRES_DB"'
+    nextcloud_migrate_disabled_apps:
+      - notify_push
+      - spreed
+      - whiteboard
+      - recognize
+      - facerecognition
+      - eurooffice
+      - nextcloud-aio
+  tasks:
+    - name: Check PostgreSQL major version
+      ansible.builtin.command:
+        argv: "{{ nextcloud_migrate_exec + [nextcloud_migrate_psql ~ ' -Atc \"show server_version_num\"'] }}"
+      register: nextcloud_migrate_pg_version
+      changed_when: false
+      failed_when: not nextcloud_migrate_pg_version.stdout.startswith('18')
+
+    - name: Count existing tables
+      ansible.builtin.command:
+        argv: "{{ nextcloud_migrate_exec + [nextcloud_migrate_psql ~ nextcloud_migrate_count_query] }}"
+      vars:
+        nextcloud_migrate_count_query: >-
+          {{ ' -Atc "select count(*) from information_schema.tables where table_schema = current_schema()"' }}
+      register: nextcloud_migrate_tables
+      changed_when: false
+
+    - name: Refuse to restore into a non-empty database
+      ansible.builtin.assert:
+        that: nextcloud_migrate_tables.stdout | trim == '0'
+        fail_msg: Database already has tables; restore was not run.
+
+    - name: Load dump
+      ansible.builtin.command:
+        argv: "{{ nextcloud_migrate_exec + [nextcloud_migrate_psql ~ ' -q -f /var/lib/postgresql/restore/nextcloud.sql'] }}"
+      changed_when: true
+
+    - name: Disable apps that depend on AIO containers or need extra memory
+      ansible.builtin.command:
+        argv: "{{ nextcloud_migrate_exec + [nextcloud_migrate_psql ~ nextcloud_migrate_disable_query] }}"
+      vars:
+        nextcloud_migrate_disable_query: >-
+          {{ ' -c "update oc_appconfig set configvalue = ' ~ "'no'" ~ ' where configkey = ' ~ "'enabled'"
+             ~ " and appid in ('" ~ (nextcloud_migrate_disabled_apps | join("','")) ~ "')" ~ '"' }}
+      changed_when: true
+
+- name: Remove temporary dump
+  hosts: k3s_worker
+  become: true
+  gather_facts: false
+  tags: [restore]
+  tasks:
+    - name: Find the database volume
+      ansible.builtin.find:
+        paths: /var/lib/rancher/k3s/storage
+        patterns: "*_nextcloud_nextcloud-postgres"
+        file_type: directory
+      register: nextcloud_migrate_pvc
+      failed_when: nextcloud_migrate_pvc.matched != 1
+
+    - name: Delete restore directory
+      ansible.builtin.file:
+        path: "{{ nextcloud_migrate_pvc.files[0].path }}/restore"
+        state: absent
+
+- name: Remove Jobs created from the old chart
+  hosts: k3s_master
+  become: true
+  gather_facts: false
+  tags: [cutover]
+  tasks:
+    - name: Delete stuck Jobs
+      ansible.builtin.command: >-
+        kubectl delete job -n nextcloud --ignore-not-found
+        nextcloud-backup-29849670 nextcloud-cron-29848555
+      register: nextcloud_migrate_jobs
+      changed_when: "'deleted' in nextcloud_migrate_jobs.stdout"
+
+- name: Finish migration
+  hosts: k3s_worker
+  become: true
+  gather_facts: false
+  tags: [cutover]
+  vars:
+    nextcloud_migrate_root: /mnt/hub_drive_2/nextcloud
+  tasks:
+    - name: Create backup directory
+      ansible.builtin.file:
+        path: /mnt/hub_drive_2/nextcloud-backups
+        state: directory
+        owner: root
+        group: root
+        mode: "0750"
+
+    - name: Write cutover marker
+      ansible.builtin.file:
+        path: "{{ nextcloud_migrate_root }}/.migration-cutover"
+        state: touch
+        modification_time: preserve
+        access_time: preserve
+        mode: "0644"

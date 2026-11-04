@@ -1,0 +1,48 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: nextcloud-config
+  labels:
+    {{- include "nextcloud.labels" . | nindent 4 }}
+data:
+  k8s.config.php: |
+    <?php
+    $CONFIG = [
+      'overwritehost' => {{ .Values.ingress.host | squote }},
+      'overwriteprotocol' => 'https',
+      'overwrite.cli.url' => {{ .Values.nextcloud.overwriteCliUrl | squote }},
+      'trusted_domains' => [
+        {{- range .Values.nextcloud.trustedDomains }}
+        {{ . | squote }},
+        {{- end }}
+      ],
+      'trusted_proxies' => [
+        {{- range .Values.nextcloud.trustedProxies }}
+        {{ . | squote }},
+        {{- end }}
+      ],
+      'datadirectory' => {{ .Values.nextcloud.dataMountPath | squote }},
+      'logfile' => {{ printf "%s/nextcloud.log" .Values.nextcloud.dataMountPath | squote }},
+      'logfile_audit' => {{ printf "%s/audit.log" .Values.nextcloud.dataMountPath | squote }},
+      'dbhost' => getenv('POSTGRES_HOST'),
+      'dbname' => getenv('POSTGRES_DB'),
+      'dbuser' => getenv('POSTGRES_USER'),
+      'dbpassword' => getenv('POSTGRES_PASSWORD'),
+      'redis' => [
+        'host' => getenv('REDIS_HOST'),
+        'password' => getenv('REDIS_HOST_PASSWORD'),
+        'port' => {{ .Values.redis.port }},
+      ],
+      'enabledPreviewProviders' => [
+        'OC\Preview\PNG',
+        'OC\Preview\JPEG',
+        'OC\Preview\GIF',
+        'OC\Preview\BMP',
+        'OC\Preview\XBitmap',
+        'OC\Preview\MP3',
+        'OC\Preview\TXT',
+        'OC\Preview\MarkDown',
+        'OC\Preview\OpenDocument',
+        'OC\Preview\Krita',
+      ],
+    ];

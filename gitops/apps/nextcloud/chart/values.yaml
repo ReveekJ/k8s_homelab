@@ -3,7 +3,7 @@ fullnameOverride: nextcloud
 
 image:
   repository: nextcloud
-  tag: "31-apache"
+  tag: "33.0.8-apache"
   pullPolicy: IfNotPresent
 
 secretName: nextcloud-secrets
@@ -18,17 +18,17 @@ tolerations:
     effect: NoSchedule
 
 postgres:
-  image: postgres:16-alpine
+  image: postgres:18-alpine
   port: 5432
   database: nextcloud
   user: nextcloud
   resources:
     requests:
       cpu: 100m
-      memory: 128Mi
+      memory: 256Mi
     limits:
       cpu: "1"
-      memory: 512Mi
+      memory: 1Gi
   persistence:
     storageClass: local-path
     size: 10Gi
@@ -50,18 +50,20 @@ redis:
 nextcloud:
   port: 80
   hostPath: /mnt/hub_drive_2/nextcloud/data
+  dataMountPath: /mnt/ncdata
   configHostPath: /mnt/hub_drive_2/nextcloud/config
-  externalStorageHostPath: /mnt/external_drive_1
-  externalStorageMountPath: /external_drive_1
+  customAppsHostPath: /mnt/hub_drive_2/nextcloud/custom_apps
   resources:
     requests:
       cpu: 100m
-      memory: 256Mi
+      memory: 512Mi
     limits:
       cpu: "1"
-      memory: 768Mi
+      memory: 2Gi
   trustedDomains:
     - nextcloud.reveek-io.ru
+  trustedProxies:
+    - 10.42.0.0/16
   overwriteCliUrl: https://nextcloud.reveek-io.ru
 
 cron:
@@ -88,6 +90,19 @@ backup:
     limits:
       cpu: 500m
       memory: 256Mi
+  mirror:
+    # Overwrites the AIO data in /mnt/ncdata, which ends the rollback window.
+    enabled: false
+    schedule: "30 4 * * *"
+    dataHostPath: /mnt/ncdata
+    configHostPath: /mnt/nextcloud-config-mirror
+    resources:
+      requests:
+        cpu: 50m
+        memory: 64Mi
+      limits:
+        cpu: 500m
+        memory: 512Mi
 
 ingress:
   className: traefik

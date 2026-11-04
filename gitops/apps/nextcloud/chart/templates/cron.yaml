@@ -9,6 +9,7 @@ metadata:
 spec:
   schedule: {{ .Values.cron.schedule | quote }}
   concurrencyPolicy: Forbid
+  startingDeadlineSeconds: 240
   successfulJobsHistoryLimit: 1
   failedJobsHistoryLimit: 3
   jobTemplate:
@@ -18,6 +19,8 @@ spec:
           labels:
             app.kubernetes.io/name: nextcloud
             app.kubernetes.io/component: cron
+          annotations:
+            checksum/config: {{ include (print $.Template.BasePath "/configmap.yaml") . | sha256sum }}
         spec:
           restartPolicy: OnFailure
           nodeSelector:
@@ -28,10 +31,14 @@ spec:
             - name: cron
               image: {{ printf "%s:%s" .Values.image.repository .Values.image.tag | quote }}
               imagePullPolicy: {{ .Values.image.pullPolicy }}
-              command: ["/bin/sh", "-c"]
               args:
+                - /bin/sh
+                - -c
                 - exec su -s /bin/sh www-data -c 'php -f /var/www/html/cron.php'
               env:
+                # Makes the image entrypoint populate /var/www/html before cron.php runs.
+                - name: NEXTCLOUD_UPDATE
+                  value: "1"
                 - name: POSTGRES_HOST
                   value: nextcloud-postgres
                 - name: POSTGRES_DB
@@ -53,10 +60,14 @@ spec:
               volumeMounts:
                 - name: nextcloud-config
                   mountPath: /var/www/html/config
+                - name: k8s-config
+                  mountPath: /var/www/html/config/k8s.config.php
+                  subPath: k8s.config.php
+                  readOnly: true
+                - name: nextcloud-custom-apps
+                  mountPath: /var/www/html/custom_apps
                 - name: nextcloud-data
-                  mountPath: /var/www/html/data
-                - name: external-storage
-                  mountPath: {{ .Values.nextcloud.externalStorageMountPath }}
+                  mountPath: {{ .Values.nextcloud.dataMountPath }}
               resources:
                 {{- toYaml .Values.cron.resources | nindent 16 }}
           volumes:
@@ -64,12 +75,15 @@ spec:
               hostPath:
                 path: {{ .Values.nextcloud.configHostPath }}
                 type: Directory
+            - name: k8s-config
+              configMap:
+                name: nextcloud-config
+            - name: nextcloud-custom-apps
+              hostPath:
+                path: {{ .Values.nextcloud.customAppsHostPath }}
+                type: Directory
             - name: nextcloud-data
               hostPath:
                 path: {{ .Values.nextcloud.hostPath }}
-                type: Directory
-            - name: external-storage
-              hostPath:
-                path: {{ .Values.nextcloud.externalStorageHostPath }}
                 type: Directory
 {{- end }}

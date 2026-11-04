@@ -9,6 +9,7 @@ metadata:
 spec:
   schedule: {{ .Values.backup.schedule | quote }}
   concurrencyPolicy: Forbid
+  startingDeadlineSeconds: 3600
   successfulJobsHistoryLimit: 2
   failedJobsHistoryLimit: 3
   jobTemplate:
@@ -38,8 +39,6 @@ spec:
                   pg_dump --clean --if-exists --no-owner --no-privileges \
                     -h nextcloud-postgres -U "$POSTGRES_USER" "$POSTGRES_DB" \
                     | gzip > "$backup_dir/postgres-$timestamp.sql.gz"
-                  tar -czf "$backup_dir/nextcloud-config-data-$timestamp.tar.gz" \
-                    -C /backup-source config data
                   find "$backup_dir" -type f -mtime +{{ .Values.backup.retentionDays }} -delete
               env:
                 - name: PGHOST
@@ -58,9 +57,6 @@ spec:
               volumeMounts:
                 - name: backup
                   mountPath: {{ .Values.backup.mountPath }}
-                - name: nextcloud
-                  mountPath: /backup-source
-                  readOnly: true
               resources:
                 {{- toYaml .Values.backup.resources | nindent 16 }}
           volumes:
@@ -68,8 +64,75 @@ spec:
               hostPath:
                 path: {{ .Values.backup.hostPath }}
                 type: Directory
-            - name: nextcloud
+{{- if .Values.backup.mirror.enabled }}
+---
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: nextcloud-mirror
+  labels:
+    {{- include "nextcloud.labels" . | nindent 4 }}
+    app.kubernetes.io/component: mirror
+spec:
+  schedule: {{ .Values.backup.mirror.schedule | quote }}
+  concurrencyPolicy: Forbid
+  startingDeadlineSeconds: 3600
+  successfulJobsHistoryLimit: 2
+  failedJobsHistoryLimit: 3
+  jobTemplate:
+    spec:
+      template:
+        metadata:
+          labels:
+            app.kubernetes.io/name: nextcloud
+            app.kubernetes.io/component: mirror
+        spec:
+          restartPolicy: Never
+          nodeSelector:
+            {{- toYaml .Values.nodeSelector | nindent 12 }}
+          tolerations:
+            {{- toYaml .Values.tolerations | nindent 12 }}
+          containers:
+            - name: mirror
+              image: {{ printf "%s:%s" .Values.image.repository .Values.image.tag | quote }}
+              imagePullPolicy: {{ .Values.image.pullPolicy }}
+              command: ["/bin/sh", "-c"]
+              args:
+                - |
+                  set -eu
+                  test -f /source/data/.ncdata
+                  test -f /source/config/config.php
+                  rsync -aH --numeric-ids --delete-delay /source/data/ /mirror/data/
+                  rsync -aH --numeric-ids --delete-delay --exclude k8s.config.php /source/config/ /mirror/config/
+              volumeMounts:
+                - name: source-data
+                  mountPath: /source/data
+                  readOnly: true
+                - name: source-config
+                  mountPath: /source/config
+                  readOnly: true
+                - name: mirror-data
+                  mountPath: /mirror/data
+                - name: mirror-config
+                  mountPath: /mirror/config
+              resources:
+                {{- toYaml .Values.backup.mirror.resources | nindent 16 }}
+          volumes:
+            - name: source-data
               hostPath:
-                path: /mnt/hub_drive_2/nextcloud
+                path: {{ .Values.nextcloud.hostPath }}
                 type: Directory
+            - name: source-config
+              hostPath:
+                path: {{ .Values.nextcloud.configHostPath }}
+                type: Directory
+            - name: mirror-data
+              hostPath:
+                path: {{ .Values.backup.mirror.dataHostPath }}
+                type: Directory
+            - name: mirror-config
+              hostPath:
+                path: {{ .Values.backup.mirror.configHostPath }}
+                type: DirectoryOrCreate
+{{- end }}
 {{- end }}
