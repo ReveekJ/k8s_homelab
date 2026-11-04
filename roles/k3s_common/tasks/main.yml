@@ -170,3 +170,26 @@
     state: started
     daemon_reload: true
   tags: [connectivity]
+
+- name: Ensure k3s config drop-in directory exists
+  ansible.builtin.file:
+    path: "{{ k3s_common_kubelet_config | dirname }}"
+    state: directory
+    owner: root
+    group: root
+    mode: "0755"
+  tags: [kubelet_memory]
+
+# eviction-hard replaces the k3s defaults, so the disk thresholds are repeated here.
+- name: Configure kubelet memory reservation and eviction
+  ansible.builtin.copy:
+    content: |
+      kubelet-arg:
+        - "system-reserved=memory={{ k3s_common_kubelet_memory[inventory_hostname].system_reserved }}"
+        - "eviction-hard=memory.available<{{ k3s_common_kubelet_memory[inventory_hostname].eviction_hard }},nodefs.available<5%,imagefs.available<5%"
+    dest: "{{ k3s_common_kubelet_config }}"
+    owner: root
+    group: root
+    mode: "0644"
+  notify: Restart k3s
+  tags: [kubelet_memory]

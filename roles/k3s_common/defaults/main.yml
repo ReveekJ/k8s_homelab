@@ -17,3 +17,13 @@ k3s_common_connectivity_api: 192.168.1.10
 k3s_common_connectivity_peers:
   master: 192.168.1.7
   worker: 192.168.1.10
+k3s_common_kubelet_config: /etc/rancher/k3s/config.yaml.d/10-kubelet-memory.yaml
+# k3s sets no memory eviction threshold by default, so without this only the
+# kernel OOM killer reacts to memory shortage.
+k3s_common_kubelet_memory:
+  master:
+    system_reserved: 1500Mi
+    eviction_hard: 200Mi
+  worker:
+    system_reserved: 512Mi
+    eviction_hard: 300Mi

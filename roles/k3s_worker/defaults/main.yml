@@ -9,3 +9,22 @@ k3s_worker_noodle_db_path: "{{ k3s_worker_data_disk_path }}/noodle-db"
 k3s_worker_external_disk_uuid: 96CEB9B1CEB989CF
 k3s_worker_external_disk_path: /mnt/external_drive1
 k3s_worker_external_disk_opts: defaults,nofail,x-systemd.device-timeout=10s
+k3s_worker_legacy_vm: sesc-it-team
+k3s_worker_legacy_vm_network: default
+# Sockets precede their services so that stopping a service does not reactivate it.
+k3s_worker_legacy_services:
+  - gitlab-runner.service
+  - docker.socket
+  - docker.service
+  - containerd.service
+  - libvirt-guests.service
+  - libvirtd-admin.socket
+  - libvirtd-ro.socket
+  - libvirtd.socket
+  - libvirtd.service
+  - virtlogd-admin.socket
+  - virtlogd.socket
+  - virtlogd.service
+  - virtlockd-admin.socket
+  - virtlockd.socket
+  - virtlockd.service

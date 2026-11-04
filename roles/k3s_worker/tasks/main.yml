@@ -72,3 +72,63 @@
     line: "UUID={{ k3s_worker_external_disk_uuid }} {{ k3s_worker_external_disk_path }} ntfs {{ k3s_worker_external_disk_opts }} 0 0"
     state: present
   tags: [storage_external]
+
+# Everything below only disables services. Packages, the VM image and Docker
+# volumes stay in place: nextcloud_aio_* volumes are the Nextcloud rollback.
+- name: Read legacy VM state
+  ansible.builtin.command: virsh domstate {{ k3s_worker_legacy_vm }}
+  register: k3s_worker_legacy_vm_state
+  changed_when: false
+  failed_when: false
+  tags: [disable_legacy_services]
+
+- name: Stop legacy VM
+  when: k3s_worker_legacy_vm_state.rc == 0
+  tags: [disable_legacy_services]
+  block:
+    - name: Disable legacy VM autostart
+      ansible.builtin.command: virsh autostart --disable {{ k3s_worker_legacy_vm }}
+      changed_when: true
+
+    - name: Request legacy VM shutdown
+      ansible.builtin.command: virsh shutdown {{ k3s_worker_legacy_vm }}
+      changed_when: true
+      when: "'running' in k3s_worker_legacy_vm_state.stdout"
+
+    - name: Wait for legacy VM to shut down
+      ansible.builtin.command: virsh domstate {{ k3s_worker_legacy_vm }}
+      register: k3s_worker_legacy_vm_wait
+      changed_when: false
+      failed_when: false
+      until: "'shut off' in k3s_worker_legacy_vm_wait.stdout"
+      retries: 12
+      delay: 5
+      when: "'running' in k3s_worker_legacy_vm_state.stdout"
+
+    # destroy only powers the domain off; its definition and disk are kept.
+    - name: Power off legacy VM that ignored shutdown
+      ansible.builtin.command: virsh destroy {{ k3s_worker_legacy_vm }}
+      changed_when: true
+      when:
+        - "'running' in k3s_worker_legacy_vm_state.stdout"
+        - "'shut off' not in k3s_worker_legacy_vm_wait.stdout"
+
+    - name: Disable legacy VM network autostart
+      ansible.builtin.command: virsh net-autostart --disable {{ k3s_worker_legacy_vm_network }}
+      changed_when: true
+
+    - name: Stop legacy VM network
+      ansible.builtin.command: virsh net-destroy {{ k3s_worker_legacy_vm_network }}
+      register: k3s_worker_legacy_net_stop
+      changed_when: k3s_worker_legacy_net_stop.rc == 0
+      failed_when:
+        - k3s_worker_legacy_net_stop.rc != 0
+        - "'is not active' not in k3s_worker_legacy_net_stop.stderr"
+
+- name: Stop and disable legacy services
+  ansible.builtin.systemd_service:
+    name: "{{ item }}"
+    state: stopped
+    enabled: false
+  loop: "{{ k3s_worker_legacy_services }}"
+  tags: [disable_legacy_services]
