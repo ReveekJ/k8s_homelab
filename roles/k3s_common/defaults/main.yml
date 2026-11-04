@@ -12,3 +12,8 @@ k3s_common_packages:
 k3s_common_public_key: ""
 k3s_common_sshd_hardening_conf: /etc/ssh/sshd_config.d/00-homelab-hardening.conf
 k3s_common_logind_sleep_conf: /etc/systemd/logind.conf.d/00-homelab-power.conf
+k3s_common_connectivity_gateway: 192.168.1.1
+k3s_common_connectivity_api: 192.168.1.10
+k3s_common_connectivity_peers:
+  master: 192.168.1.7
+  worker: 192.168.1.10

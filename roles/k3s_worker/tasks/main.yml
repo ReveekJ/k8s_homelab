@@ -64,3 +64,11 @@
     group: root
     mode: "0700"
   tags: [storage]
+
+- name: Keep boot independent of the external NTFS disk
+  ansible.builtin.lineinfile:
+    path: /etc/fstab
+    regexp: '^UUID={{ k3s_worker_external_disk_uuid }}\s'
+    line: "UUID={{ k3s_worker_external_disk_uuid }} {{ k3s_worker_external_disk_path }} ntfs {{ k3s_worker_external_disk_opts }} 0 0"
+    state: present
+  tags: [storage_external]

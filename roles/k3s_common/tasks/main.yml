@@ -106,3 +106,52 @@
     group: root
     validate: "/usr/sbin/sshd -t -f %s"
   notify: Restart sshd
+
+- name: Install connectivity check script
+  ansible.builtin.template:
+    src: homelab-connectivity-log.sh.j2
+    dest: /usr/local/bin/homelab-connectivity-log
+    owner: root
+    group: root
+    mode: "0755"
+  tags: [connectivity]
+
+- name: Install connectivity check units
+  ansible.builtin.copy:
+    content: "{{ item.content }}"
+    dest: "/etc/systemd/system/{{ item.name }}"
+    owner: root
+    group: root
+    mode: "0644"
+  loop:
+    - name: homelab-connectivity-log.service
+      content: |
+        [Unit]
+        Description=Log LAN and Kubernetes API reachability
+
+        [Service]
+        Type=oneshot
+        ExecStart=/usr/local/bin/homelab-connectivity-log
+    - name: homelab-connectivity-log.timer
+      content: |
+        [Unit]
+        Description=Run the connectivity check every 30 seconds
+
+        [Timer]
+        OnBootSec=30s
+        OnUnitActiveSec=30s
+        AccuracySec=1s
+
+        [Install]
+        WantedBy=timers.target
+  loop_control:
+    label: "{{ item.name }}"
+  tags: [connectivity]
+
+- name: Enable connectivity check timer
+  ansible.builtin.systemd_service:
+    name: homelab-connectivity-log.timer
+    enabled: true
+    state: started
+    daemon_reload: true
+  tags: [connectivity]

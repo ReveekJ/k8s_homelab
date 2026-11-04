@@ -1,0 +1,11 @@
+#!/bin/bash
+# Read the result with: journalctl -t homelab-connectivity
+check_ping() {
+  ping -c 1 -W 2 "$1" >/dev/null 2>&1 && echo ok || echo fail
+}
+
+gateway=$(check_ping {{ k3s_common_connectivity_gateway }})
+peer=$(check_ping {{ k3s_common_connectivity_peers[inventory_hostname] }})
+api=$(timeout 3 bash -c 'exec 3<>/dev/tcp/{{ k3s_common_connectivity_api }}/6443' 2>/dev/null && echo ok || echo fail)
+
+logger -t homelab-connectivity "gateway=$gateway peer=$peer api=$api"
