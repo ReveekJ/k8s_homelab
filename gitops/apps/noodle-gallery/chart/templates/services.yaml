@@ -42,3 +42,18 @@ spec:
     - name: postgres
       port: {{ .Values.database.port }}
       targetPort: postgres
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: noodle-gallery-machine-learning
+  labels:
+    {{- include "noodle-gallery.labels" . | nindent 4 }}
+spec:
+  selector:
+    app.kubernetes.io/name: noodle-gallery
+    app.kubernetes.io/component: machine-learning
+  ports:
+    - name: http
+      port: {{ .Values.machineLearning.port }}
+      targetPort: http

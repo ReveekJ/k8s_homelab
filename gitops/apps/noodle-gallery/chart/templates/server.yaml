@@ -60,6 +60,8 @@ spec:
                   key: DB_PASSWORD
             - name: REDIS_HOSTNAME
               value: noodle-gallery-redis
+            - name: IMMICH_MACHINE_LEARNING_URL
+              value: "http://noodle-gallery-machine-learning:{{ .Values.machineLearning.port }}"
           ports:
             - name: http
               containerPort: {{ .Values.server.port }}

@@ -39,6 +39,7 @@ server:
       memory: 2Gi
 
 machineLearning:
+  port: 3003
   resources:
     requests:
       cpu: 100m

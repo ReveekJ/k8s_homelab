@@ -32,7 +32,7 @@ spec:
               value: {{ .Values.timezone | quote }}
           ports:
             - name: http
-              containerPort: 3003
+              containerPort: {{ .Values.machineLearning.port }}
           volumeMounts:
             - name: model-cache
               mountPath: /cache
