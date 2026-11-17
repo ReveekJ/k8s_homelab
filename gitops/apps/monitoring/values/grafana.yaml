@@ -39,9 +39,9 @@ resources:
     memory: 96Mi
   limits:
     cpu: "1"
-    memory: 256Mi
+    memory: 320Mi
 env:
-  GOMEMLIMIT: 218MiB
+  GOMEMLIMIT: 272MiB
 
 persistence:
   enabled: true
@@ -61,6 +61,10 @@ grafana.ini:
     enabled: false
   security:
     cookie_secure: true
+  # Each bundled data source runs as its own process. Grafana peaks above 360 MiB
+  # with all of them, so only Prometheus, Loki and Logs Drilldown stay enabled.
+  plugins:
+    disable_plugins: cloudwatch,elasticsearch,grafana-azure-monitor-datasource,grafana-postgresql-datasource,grafana-pyroscope-datasource,graphite,influxdb,jaeger,mssql,mysql,opentsdb,parca,stackdriver,tempo,zipkin,grafana-testdata-datasource,grafana-pyroscope-app,grafana-exploretraces-app,grafana-metricsdrilldown-app
   log:
     level: warn
   # Unified Alerting is on but has no rules or contact points yet. Add them later
