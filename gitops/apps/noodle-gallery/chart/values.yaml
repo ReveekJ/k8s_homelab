@@ -36,7 +36,7 @@ server:
       memory: 512Mi
     limits:
       cpu: "2"
-      memory: 2Gi
+      memory: 2560Mi
 
 machineLearning:
   port: 3003
